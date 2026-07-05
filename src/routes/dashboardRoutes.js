@@ -156,49 +156,6 @@ function createDashboardRouter(whatsappService) {
     }
   });
 
-  router.post('/api/debug/test-plain', async (req, res) => {
-    try {
-      const { target } = req.body || {};
-      await whatsappService.sendMessage('personal', target, 'TEST PLAIN TEXT - schedulebot debug');
-      return res.json({ ok: true });
-    } catch (error) {
-      return res.status(500).json({ error: error.message, stack: error.stack });
-    }
-  });
-
-  router.post('/api/debug/test-command', async (req, res) => {
-    try {
-      const { trigger, target } = req.body || {};
-      const command = customCommandStore.findCommand(trigger);
-      if (!command) return res.status(404).json({ error: 'Command not found' });
-
-      const chatId = whatsappService.buildChatId('personal', target);
-      await whatsappService.replyWithCustomCommand(chatId, command, null);
-      return res.json({ ok: true, sentTo: chatId });
-    } catch (error) {
-      return res.status(500).json({ error: error.message, stack: error.stack });
-    }
-  });
-
-  router.post('/api/debug/test-legacy-button', async (req, res) => {
-    try {
-      const { target } = req.body || {};
-      const chatId = whatsappService.buildChatId('personal', target);
-      const sock = whatsappService.sock;
-      if (!sock) return res.status(400).json({ error: 'Socket not ready' });
-
-      await sock.sendMessage(chatId, {
-        text: 'TEST LEGACY BUTTON',
-        footer: 'debug',
-        buttons: [{ buttonId: 'debug_1', buttonText: { displayText: 'Klik Sini' }, type: 1 }],
-        headerType: 1,
-      });
-      return res.json({ ok: true, sentTo: chatId });
-    } catch (error) {
-      return res.status(500).json({ error: error.message, stack: error.stack });
-    }
-  });
-
   return router;
 }
 
