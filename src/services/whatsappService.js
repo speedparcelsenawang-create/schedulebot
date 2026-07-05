@@ -13,6 +13,7 @@ const {
   useMultiFileAuthState,
   fetchLatestBaileysVersion,
   makeCacheableSignalKeyStore,
+  normalizeMessageContent,
 } = baileys;
 
 class WhatsAppService {
@@ -291,11 +292,13 @@ class WhatsAppService {
       const chatId = message.key?.remoteJid;
       if (!chatId) continue;
 
+      const content = normalizeMessageContent(message.message) || message.message;
+
       const text =
-        message.message.conversation ||
-        message.message.extendedTextMessage?.text ||
-        message.message.imageMessage?.caption ||
-        message.message.videoMessage?.caption ||
+        content.conversation ||
+        content.extendedTextMessage?.text ||
+        content.imageMessage?.caption ||
+        content.videoMessage?.caption ||
         '';
 
       const matched = customCommandStore.matchCommand(text);
