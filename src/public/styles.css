@@ -554,6 +554,10 @@ button {
   margin-bottom: 22px;
 }
 
+.field-narrow {
+  max-width: 220px;
+}
+
 label {
   display: block;
   margin-bottom: 8px;
