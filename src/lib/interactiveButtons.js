@@ -2,6 +2,10 @@ const baileys = require('atexovi-baileys');
 
 const { generateWAMessageFromContent, proto } = baileys;
 
+function isPersonalJid(jid) {
+  return typeof jid === 'string' && jid.endsWith('@s.whatsapp.net');
+}
+
 function getButtonDedupKey(button) {
   if (!button || typeof button !== 'object') return '';
 
@@ -79,6 +83,7 @@ async function sendInteractiveButtons(sock, jid, payload, options = {}) {
   const bodyText = payload?.text || payload?.caption || '';
   const footerText = payload?.footer || '';
   const nativeButtons = toNativeFlowButtons(payload?.buttons);
+  const shouldStripQuotedFallback = isPersonalJid(jid) && Boolean(options?.quoted);
 
   if (!nativeButtons.length) {
     await sock.sendMessage(jid, { text: bodyText || ' ' }, options);
@@ -100,6 +105,20 @@ async function sendInteractiveButtons(sock, jid, payload, options = {}) {
   } catch (error) {
     // Fallback for Baileys variants that do not support interactiveButtons in sendMessage.
     console.warn('[WA] interactiveButtons via sendMessage failed:', error.message);
+
+    if (shouldStripQuotedFallback) {
+      try {
+        await sock.sendMessage(jid, {
+          text: bodyText || ' ',
+          footer: footerText,
+          interactiveButtons: nativeButtons,
+          viewOnce: true,
+        });
+        return;
+      } catch (retryError) {
+        console.warn('[WA] interactiveButtons retry without quoted failed:', retryError.message);
+      }
+    }
   }
 
   try {
@@ -135,17 +154,29 @@ async function sendInteractiveButtons(sock, jid, payload, options = {}) {
     const legacyButtons = toLegacyButtons(nativeButtons);
     if (!legacyButtons.length) throw error;
 
-    await sock.sendMessage(
-      jid,
-      {
+    try {
+      await sock.sendMessage(
+        jid,
+        {
+          text: bodyText || ' ',
+          footer: footerText,
+          buttons: legacyButtons,
+          headerType: 1,
+          viewOnce: true,
+        },
+        options
+      );
+    } catch (legacyError) {
+      if (!shouldStripQuotedFallback) throw legacyError;
+
+      await sock.sendMessage(jid, {
         text: bodyText || ' ',
         footer: footerText,
         buttons: legacyButtons,
         headerType: 1,
         viewOnce: true,
-      },
-      options
-    );
+      });
+    }
   }
 }
 
