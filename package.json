@@ -36,5 +36,8 @@
   },
   "devDependencies": {
     "nodemon": "^3.1.14"
+  },
+  "overrides": {
+    "libsignal": "npm:libsignal@^6.0.0"
   }
 }

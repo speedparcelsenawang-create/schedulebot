@@ -2,4 +2,6 @@ node_modules
 .env
 .wwebjs_auth
 .wwebjs_cache
+.baileys_auth
+.schedulebot.lock
 npm-debug.log*

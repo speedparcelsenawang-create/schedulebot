@@ -77,6 +77,6 @@ whatsappService.init();
 const scheduler = new SchedulerService(whatsappService);
 scheduler.start();
 
-app.listen(port, () => {
+app.listen(port, '0.0.0.0', () => {
   console.log(`[WEB] Dashboard running at http://localhost:${port}`);
 });

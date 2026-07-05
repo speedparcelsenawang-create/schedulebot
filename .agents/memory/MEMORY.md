@@ -1,0 +1,1 @@
+- [npm git-dependency firewall block](npm-git-dependency-firewall-block.md) — package-firewall.replit.local 403s any package whose deps include a git URL (e.g. baileys→libsignal); workaround via override + public registry install.
