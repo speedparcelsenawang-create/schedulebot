@@ -155,7 +155,6 @@
                   </div>
 
                   <ul class="tips muted" id="account-target-tips" hidden>
-                    <li>Personal: use a number like 62812xxxx</li>
                     <li>Group: use the group ID, with or without @g.us</li>
                   </ul>
                 </div>
@@ -199,18 +198,17 @@
                     <div class="field">
                       <label for="targetType">Target Type</label>
                       <select id="targetType" name="targetType" required>
-                        <option value="personal" selected>Personal Chat</option>
-                        <option value="group">Group Chat</option>
+                        <option value="group" selected>Group Chat</option>
                       </select>
                     </div>
 
                     <div class="field">
-                      <label for="targetValue" id="targetValueLabel">Destination Number (62812xxxx)</label>
+                      <label for="targetValue" id="targetValueLabel">Group ID (example: 1203630xxxx@g.us)</label>
                       <input id="targetValue" name="targetValue" required />
-                      <p class="hint" id="targetHint">Personal example: 6281234567890</p>
+                      <p class="hint" id="targetHint">You can enter 1203630xxxx only or with @g.us suffix</p>
                     </div>
 
-                    <div class="group-tools" id="groupTools" hidden>
+                    <div class="group-tools" id="groupTools">
                       <div class="group-tools-head">
                         <label for="groupPicker">Select Group From WhatsApp Account</label>
                         <button type="button" class="btn btn-outline btn-sm" id="refreshGroupsBtn">Refresh Groups</button>
@@ -297,10 +295,6 @@
           </section>
 
           <section class="page" data-page="custom-commands" id="custom-commands" hidden>
-            <div class="page-tools">
-              <a class="btn btn-outline btn-sm" href="/commands">Open Command Manager Page</a>
-            </div>
-
             <div class="method-tabs" id="command-tabs" role="tablist" aria-label="Custom command tabs">
               <button type="button" class="method-tab active" id="commandTabCreate" data-tab="create" role="tab" aria-controls="command-create-panel" aria-selected="true">Add Command</button>
               <button type="button" class="method-tab" id="commandTabList" data-tab="list" role="tab" aria-controls="command-list-panel" aria-selected="false">Command List</button>
@@ -317,8 +311,8 @@
                     <input type="hidden" id="commandOriginalTrigger" value="" />
                     <div class="field">
                       <label for="commandTrigger">Trigger</label>
-                      <input id="commandTrigger" name="trigger" placeholder=".hello" required />
-                      <p class="hint">Must start with a dot, example: .hello</p>
+                      <input id="commandTrigger" name="trigger" placeholder="!hello" required />
+                      <p class="hint">Must start with !, example: !hello</p>
                     </div>
 
                     <div class="field">

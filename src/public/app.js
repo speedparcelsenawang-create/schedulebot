@@ -489,18 +489,11 @@ async function loadGroups(force = false) {
 
 function syncTargetInputContent() {
   if (!targetTypeInput || !targetValueLabel || !targetHint) return;
-
-  if (targetTypeInput.value === 'group') {
-    targetValueLabel.textContent = 'Group ID (example: 1203630xxxx@g.us)';
-    targetHint.textContent = 'You can enter 1203630xxxx only or with @g.us suffix';
-    if (groupTools) groupTools.hidden = false;
-    loadGroups();
-    return;
-  }
-
-  targetValueLabel.textContent = 'Destination Number (62812xxxx)';
-  targetHint.textContent = 'Personal example: 6281234567890';
-  if (groupTools) groupTools.hidden = true;
+  targetTypeInput.value = 'group';
+  targetValueLabel.textContent = 'Group ID (example: 1203630xxxx@g.us)';
+  targetHint.textContent = 'You can enter 1203630xxxx only or with @g.us suffix';
+  if (groupTools) groupTools.hidden = false;
+  loadGroups();
 }
 
 if (targetTypeInput) {
@@ -763,7 +756,7 @@ function updateCommandSubmitState() {
   if (!commandSubmitBtn) return;
 
   const trigger = String(commandTriggerInput?.value || '').trim();
-  const hasValidTrigger = Boolean(trigger) && trigger.startsWith('.');
+  const hasValidTrigger = Boolean(trigger) && trigger.startsWith('!');
   const selectedMediaType = String(commandMediaTypeInput?.value || '').trim();
   const hasMediaType = Boolean(selectedMediaType);
   const isNoMedia = selectedMediaType === 'none';

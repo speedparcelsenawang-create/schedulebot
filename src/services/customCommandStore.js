@@ -8,7 +8,7 @@ const ALLOWED_CATEGORIES = ['General', 'Greeting', 'Info', 'Utility', 'Fun', 'Me
 const ALLOWED_MEDIA_TYPES = ['image', 'video', 'audio', 'document'];
 const DEFAULT_COMMANDS = [
   {
-    trigger: '.alive',
+    trigger: '!alive',
     response: '✅ Bot is alive and running.',
     description: 'Check bot online status quickly',
     category: 'Utility',
@@ -63,6 +63,7 @@ function ensureDefaultCommands() {
 }
 
 ensureDefaultCommands();
+migrateLegacyTriggers();
 
 function normalizeCategory(value) {
   const raw = String(value || '').trim();
@@ -72,6 +73,49 @@ function normalizeCategory(value) {
 function normalizeTrigger(value) {
   const clean = String(value || '').trim().toLowerCase().replace(/\s+/g, '');
   return clean;
+}
+
+function normalizeStoredTrigger(value) {
+  const key = normalizeTrigger(value);
+  if (!key) return '';
+  if (key.startsWith('!')) return key;
+  if (key.startsWith('.')) return `!${key.slice(1)}`;
+  return `!${key.replace(/^[^a-z0-9]+/, '')}`;
+}
+
+function migrateLegacyTriggers() {
+  let changed = false;
+  const deduped = [];
+  const seen = new Set();
+
+  for (const item of commands) {
+    if (!item || typeof item !== 'object') continue;
+
+    const normalized = normalizeStoredTrigger(item.trigger);
+    if (!normalized || seen.has(normalized)) {
+      changed = true;
+      continue;
+    }
+
+    if (item.trigger !== normalized) {
+      changed = true;
+    }
+
+    seen.add(normalized);
+    deduped.push({
+      ...item,
+      trigger: normalized,
+      category: normalizeCategory(item.category),
+      response: String(item.response || '').trim(),
+      description: String(item.description || '').trim(),
+    });
+  }
+
+  if (!changed) return;
+
+  commands.length = 0;
+  commands.push(...deduped);
+  persistCommands();
 }
 
 function normalizeButtons(buttons) {
@@ -130,8 +174,8 @@ function createCommand(payload) {
 
   const cleanTrigger = normalizeTrigger(trigger);
   if (!cleanTrigger) throw new Error('Trigger is required');
-  if (!cleanTrigger.startsWith('.')) {
-    throw new Error('Trigger must start with a dot (example: .hello)');
+  if (!cleanTrigger.startsWith('!')) {
+    throw new Error('Trigger must start with ! (example: !hello)');
   }
 
   if (!response && !mediaUrl) {

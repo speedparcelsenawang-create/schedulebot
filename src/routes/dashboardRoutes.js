@@ -82,10 +82,6 @@ function createDashboardRouter(whatsappService) {
     res.render('dashboard', getDashboardViewData());
   });
 
-  router.get('/commands', (req, res) => {
-    res.render('commands', getDashboardViewData());
-  });
-
   router.get('/api/custom-commands', (req, res) => {
     return res.json({ commands: customCommandStore.listCommands() });
   });
@@ -151,8 +147,8 @@ function createDashboardRouter(whatsappService) {
       });
     }
 
-    if (!['personal', 'group'].includes(targetType)) {
-      return res.status(400).json({ error: 'targetType must be personal or group' });
+    if (targetType !== 'group') {
+      return res.status(400).json({ error: 'targetType must be group' });
     }
 
     const parsed = parseClientLocalDateTime(scheduleAt, timezoneOffsetMinutes);

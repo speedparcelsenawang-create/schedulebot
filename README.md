@@ -64,14 +64,13 @@ Bot WhatsApp untuk menjadwalkan pengiriman pesan melalui web dashboard.
 ## Format Data
 
 - Tipe tujuan:
-	- `personal`: nomor internasional tanpa simbol, contoh `6281234567890`
 	- `group`: id group WhatsApp, contoh `1203630xxxx@g.us` (atau tanpa suffix `@g.us`)
 - Waktu kirim: isi lewat input `datetime-local` pada form dashboard
 
 ## Catatan
 
 - Data schedule saat ini disimpan di memori (akan hilang jika server restart).
-- Session WhatsApp disimpan lokal di folder `.wwebjs_auth`.
+- Session WhatsApp disimpan lokal di folder `.baileys_auth`.
 
 ## Deploy ke Railway
 
