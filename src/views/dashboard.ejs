@@ -29,7 +29,7 @@
               </svg>
               <span>Account</span>
             </a>
-            <a class="nav-item" href="#create-schedule">
+            <a class="nav-item" href="#schedule">
               <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <rect x="3" y="4" width="18" height="18" rx="2"></rect>
                 <path d="M3 10h18M8 2v4M16 2v4"></path>
@@ -69,283 +69,314 @@
         </header>
 
         <div class="container">
-          <section class="stats-grid">
-            <div class="stat-card">
-              <p class="stat-label">Total</p>
-              <p class="stat-value"><%= scheduleStats.total %></p>
-            </div>
-            <div class="stat-card">
-              <p class="stat-label">Pending</p>
-              <p class="stat-value"><%= scheduleStats.pending %></p>
-            </div>
-            <div class="stat-card">
-              <p class="stat-label">Sent</p>
-              <p class="stat-value"><%= scheduleStats.sent %></p>
-            </div>
-            <div class="stat-card">
-              <p class="stat-label">Failed</p>
-              <p class="stat-value"><%= scheduleStats.failed %></p>
-            </div>
-          </section>
-
-          <section class="grid two-cols">
-            <article class="card" id="account">
-              <div class="card-header">
-                <h2 class="card-title">Account</h2>
-                <p class="card-description">Connection state and QR pairing</p>
-              </div>
-              <div class="card-content">
-                <div class="status-row">
-                  <span class="badge <%= waState.ready ? 'badge-success' : 'badge-warning' %>" id="wa-status">
-                    <%= waState.status %>
-                  </span>
+          <section class="page" data-page="account" id="account">
+            <div class="grid two-cols">
+              <article class="card">
+                <div class="card-header">
+                  <h2 class="card-title">Account</h2>
+                  <p class="card-description">Connection state, QR pairing, and pairing code login</p>
                 </div>
-
-                <div id="wa-qr-wrap" class="qr-wrap" <%= waState.qrCodeDataUrl ? '' : 'hidden' %>>
-                  <% if (waState.qrCodeDataUrl) { %>
-                  <img src="<%= waState.qrCodeDataUrl %>" alt="QR WhatsApp" class="qr" />
-                  <% } else { %>
-                  <img src="" alt="QR WhatsApp" class="qr" />
-                  <% } %>
-                  <p id="wa-qr-caption" class="qr-caption">Scan this QR code from WhatsApp to connect the bot.</p>
-                </div>
-                <p id="wa-qr-empty" class="muted" <%= waState.qrCodeDataUrl ? 'hidden' : '' %>>
-                  QR will appear automatically when re-login is needed.
-                </p>
-
-                <ul class="tips muted">
-                  <li>Personal: use a number like 62812xxxx</li>
-                  <li>Group: use the group ID, with or without @g.us</li>
-                </ul>
-              </div>
-            </article>
-
-            <article class="card" id="create-schedule">
-              <div class="card-header">
-                <h2 class="card-title">Create Schedule</h2>
-                <p class="card-description">Queue a new WhatsApp message</p>
-              </div>
-              <div class="card-content">
-                <form id="schedule-form">
-                  <div class="field">
-                    <label for="targetType">Target Type</label>
-                    <select id="targetType" name="targetType" required>
-                      <option value="personal" selected>Personal Chat</option>
-                      <option value="group">Group Chat</option>
-                    </select>
+                <div class="card-content">
+                  <div class="status-row">
+                    <span class="badge <%= waState.ready ? 'badge-success' : 'badge-warning' %>" id="wa-status">
+                      <%= waState.status %>
+                    </span>
                   </div>
 
-                  <div class="field">
-                    <label for="targetValue" id="targetValueLabel">Destination Number (62812xxxx)</label>
-                    <input id="targetValue" name="targetValue" required />
-                    <p class="hint" id="targetHint">Personal example: 6281234567890</p>
+                  <div class="method-tabs">
+                    <button type="button" class="method-tab active" id="methodTabQr" data-method="qr">QR Code</button>
+                    <button type="button" class="method-tab" id="methodTabPhone" data-method="phone">Phone Number</button>
                   </div>
 
-                  <div class="group-tools" id="groupTools" hidden>
-                    <div class="group-tools-head">
-                      <label for="groupPicker">Select Group From WhatsApp Account</label>
-                      <button type="button" class="btn btn-outline btn-sm" id="refreshGroupsBtn">Refresh Groups</button>
+                  <div id="qr-method" class="method-panel">
+                    <div id="wa-qr-wrap" class="qr-wrap" <%= waState.qrCodeDataUrl ? '' : 'hidden' %>>
+                      <% if (waState.qrCodeDataUrl) { %>
+                      <img src="<%= waState.qrCodeDataUrl %>" alt="QR WhatsApp" class="qr" />
+                      <% } else { %>
+                      <img src="" alt="QR WhatsApp" class="qr" />
+                      <% } %>
+                      <p id="wa-qr-caption" class="qr-caption">Scan this QR code from WhatsApp to connect the bot.</p>
                     </div>
-                    <select id="groupPicker">
-                      <option value="">Loading group list...</option>
-                    </select>
-                    <p class="hint" id="groupFetchHint">Pick a group to auto-fill the ID.</p>
+                    <p id="wa-qr-empty" class="muted" <%= waState.qrCodeDataUrl ? 'hidden' : '' %>>
+                      QR will appear automatically when re-login is needed.
+                    </p>
                   </div>
 
-                  <div class="field">
-                    <label for="message">Message</label>
-                    <textarea id="message" name="message" rows="4" required></textarea>
-                  </div>
-
-                  <div class="field">
-                    <label for="scheduleAt">Send Time</label>
-                    <input id="scheduleAt" name="scheduleAt" type="datetime-local" required />
-                  </div>
-
-                  <button type="submit" class="btn btn-primary btn-block">Save Schedule</button>
-                </form>
-                <p id="form-feedback" class="feedback"></p>
-              </div>
-            </article>
-          </section>
-
-          <section class="card table-card" id="schedule-list">
-            <div class="card-header section-head">
-              <div>
-                <h2 class="card-title">Schedule List</h2>
-                <p class="card-description">Track every pending, sent, and failed job in one clean table.</p>
-              </div>
-            </div>
-            <div class="card-content no-pad">
-              <div class="table-wrap">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>ID</th>
-                      <th>Type</th>
-                      <th>Target</th>
-                      <th>Message</th>
-                      <th>Time</th>
-                      <th>Status</th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <% if (!schedules.length) { %>
-                    <tr>
-                      <td colspan="7" class="muted">No schedules yet</td>
-                    </tr>
-                    <% } %>
-
-                    <% schedules.forEach((item) => { %>
-                    <tr>
-                      <td><%= item.id %></td>
-                      <td>
-                        <span class="badge badge-outline">
-                          <%= item.targetType === 'group' ? 'group' : 'personal' %>
-                        </span>
-                      </td>
-                      <td><%= item.targetValue %></td>
-                      <td class="cell-message"><%= item.message %></td>
-                      <td class="js-local-datetime" data-iso="<%= item.scheduleAt %>">
-                        <%= dayjs(item.scheduleAt).format('DD MMM YYYY HH:mm:ss') %>
-                      </td>
-                      <td>
-                        <span class="badge badge-<%= item.status %>"><%= item.status %></span>
-                      </td>
-                      <td class="cell-action">
-                        <button class="btn btn-ghost btn-sm btn-delete" data-id="<%= item.id %>">Delete</button>
-                      </td>
-                    </tr>
-                    <% }) %>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </section>
-
-          <section class="grid two-cols" id="custom-commands">
-            <article class="card">
-              <div class="card-header">
-                <h2 class="card-title">Add Custom Command</h2>
-                <p class="card-description">Auto-reply to incoming WhatsApp messages by trigger</p>
-              </div>
-              <div class="card-content">
-                <form id="command-form">
-                  <input type="hidden" id="commandOriginalTrigger" value="" />
-                  <div class="field">
-                    <label for="commandTrigger">Trigger</label>
-                    <input id="commandTrigger" name="trigger" placeholder=".hello" required />
-                    <p class="hint">Must start with a dot, example: .hello</p>
-                  </div>
-
-                  <div class="field">
-                    <label for="commandCategory">Category</label>
-                    <select id="commandCategory" name="category">
-                      <% commandCategories.forEach((cat) => { %>
-                      <option value="<%= cat %>"><%= cat %></option>
-                      <% }) %>
-                    </select>
-                  </div>
-
-                  <div class="field">
-                    <label for="commandDescription">Description</label>
-                    <input id="commandDescription" name="description" placeholder="Short note about this command" />
-                  </div>
-
-                  <div class="field">
-                    <label for="commandResponse">Response Text</label>
-                    <textarea id="commandResponse" name="response" rows="3" placeholder="Reply message..."></textarea>
-                  </div>
-
-                  <div class="field-row">
+                  <div id="phone-method" class="method-panel" hidden>
                     <div class="field">
-                      <label for="commandMediaType">Media Type</label>
-                      <select id="commandMediaType" name="mediaType">
-                        <option value="">No media</option>
-                        <% mediaTypes.forEach((type) => { %>
-                        <option value="<%= type %>"><%= type %></option>
+                      <label for="pairingPhone">Phone Number</label>
+                      <input id="pairingPhone" placeholder="60812xxxxxxx" />
+                      <p class="hint">Enter your WhatsApp number with country code, no + or spaces.</p>
+                    </div>
+                    <button type="button" class="btn btn-primary btn-block" id="requestPairingBtn">Get Pairing Code</button>
+                    <p id="pairing-feedback" class="feedback"></p>
+
+                    <div id="pairing-code-wrap" class="pairing-code-wrap" hidden>
+                      <p class="muted">Your pairing code:</p>
+                      <p class="pairing-code" id="pairing-code-value"></p>
+                      <p class="hint">Open WhatsApp on your phone &rarr; Linked Devices &rarr; Link with phone number, then enter this code.</p>
+                    </div>
+                  </div>
+
+                  <ul class="tips muted">
+                    <li>Personal: use a number like 62812xxxx</li>
+                    <li>Group: use the group ID, with or without @g.us</li>
+                  </ul>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <section class="page" data-page="schedule" id="schedule" hidden>
+            <div class="stats-grid">
+              <div class="stat-card">
+                <p class="stat-label">Total</p>
+                <p class="stat-value"><%= scheduleStats.total %></p>
+              </div>
+              <div class="stat-card">
+                <p class="stat-label">Pending</p>
+                <p class="stat-value"><%= scheduleStats.pending %></p>
+              </div>
+              <div class="stat-card">
+                <p class="stat-label">Sent</p>
+                <p class="stat-value"><%= scheduleStats.sent %></p>
+              </div>
+              <div class="stat-card">
+                <p class="stat-label">Failed</p>
+                <p class="stat-value"><%= scheduleStats.failed %></p>
+              </div>
+            </div>
+
+            <section class="grid two-cols">
+              <article class="card" id="create-schedule">
+                <div class="card-header">
+                  <h2 class="card-title">Create Schedule</h2>
+                  <p class="card-description">Queue a new WhatsApp message</p>
+                </div>
+                <div class="card-content">
+                  <form id="schedule-form">
+                    <div class="field">
+                      <label for="targetType">Target Type</label>
+                      <select id="targetType" name="targetType" required>
+                        <option value="personal" selected>Personal Chat</option>
+                        <option value="group">Group Chat</option>
+                      </select>
+                    </div>
+
+                    <div class="field">
+                      <label for="targetValue" id="targetValueLabel">Destination Number (62812xxxx)</label>
+                      <input id="targetValue" name="targetValue" required />
+                      <p class="hint" id="targetHint">Personal example: 6281234567890</p>
+                    </div>
+
+                    <div class="group-tools" id="groupTools" hidden>
+                      <div class="group-tools-head">
+                        <label for="groupPicker">Select Group From WhatsApp Account</label>
+                        <button type="button" class="btn btn-outline btn-sm" id="refreshGroupsBtn">Refresh Groups</button>
+                      </div>
+                      <select id="groupPicker">
+                        <option value="">Loading group list...</option>
+                      </select>
+                      <p class="hint" id="groupFetchHint">Pick a group to auto-fill the ID.</p>
+                    </div>
+
+                    <div class="field">
+                      <label for="message">Message</label>
+                      <textarea id="message" name="message" rows="4" required></textarea>
+                    </div>
+
+                    <div class="field">
+                      <label for="scheduleAt">Send Time</label>
+                      <input id="scheduleAt" name="scheduleAt" type="datetime-local" required />
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block">Save Schedule</button>
+                  </form>
+                  <p id="form-feedback" class="feedback"></p>
+                </div>
+              </article>
+
+              <article class="card table-card" id="schedule-list">
+                <div class="card-header section-head">
+                  <div>
+                    <h2 class="card-title">Schedule List</h2>
+                    <p class="card-description">Track every pending, sent, and failed job in one clean table.</p>
+                  </div>
+                </div>
+                <div class="card-content no-pad">
+                  <div class="table-wrap">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>ID</th>
+                          <th>Type</th>
+                          <th>Target</th>
+                          <th>Message</th>
+                          <th>Time</th>
+                          <th>Status</th>
+                          <th></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <% if (!schedules.length) { %>
+                        <tr>
+                          <td colspan="7" class="muted">No schedules yet</td>
+                        </tr>
+                        <% } %>
+
+                        <% schedules.forEach((item) => { %>
+                        <tr>
+                          <td><%= item.id %></td>
+                          <td>
+                            <span class="badge badge-outline">
+                              <%= item.targetType === 'group' ? 'group' : 'personal' %>
+                            </span>
+                          </td>
+                          <td><%= item.targetValue %></td>
+                          <td class="cell-message"><%= item.message %></td>
+                          <td class="js-local-datetime" data-iso="<%= item.scheduleAt %>">
+                            <%= dayjs(item.scheduleAt).format('DD MMM YYYY HH:mm:ss') %>
+                          </td>
+                          <td>
+                            <span class="badge badge-<%= item.status %>"><%= item.status %></span>
+                          </td>
+                          <td class="cell-action">
+                            <button class="btn btn-ghost btn-sm btn-delete" data-id="<%= item.id %>">Delete</button>
+                          </td>
+                        </tr>
+                        <% }) %>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </article>
+            </section>
+          </section>
+
+          <section class="page" data-page="custom-commands" id="custom-commands" hidden>
+            <div class="grid two-cols">
+              <article class="card">
+                <div class="card-header">
+                  <h2 class="card-title">Add Custom Command</h2>
+                  <p class="card-description">Auto-reply to incoming WhatsApp messages by trigger</p>
+                </div>
+                <div class="card-content">
+                  <form id="command-form">
+                    <input type="hidden" id="commandOriginalTrigger" value="" />
+                    <div class="field">
+                      <label for="commandTrigger">Trigger</label>
+                      <input id="commandTrigger" name="trigger" placeholder=".hello" required />
+                      <p class="hint">Must start with a dot, example: .hello</p>
+                    </div>
+
+                    <div class="field">
+                      <label for="commandCategory">Category</label>
+                      <select id="commandCategory" name="category">
+                        <% commandCategories.forEach((cat) => { %>
+                        <option value="<%= cat %>"><%= cat %></option>
                         <% }) %>
                       </select>
                     </div>
+
                     <div class="field">
-                      <label for="commandMediaUrl">Media URL</label>
-                      <input id="commandMediaUrl" name="mediaUrl" placeholder="https://..." />
+                      <label for="commandDescription">Description</label>
+                      <input id="commandDescription" name="description" placeholder="Short note about this command" />
                     </div>
-                  </div>
 
-                  <div class="field">
-                    <label for="commandFileName">File Name <span class="muted">(document only, optional)</span></label>
-                    <input id="commandFileName" name="fileName" placeholder="brochure.pdf" />
-                  </div>
-
-                  <div class="field">
-                    <div class="field-head">
-                      <label>Buttons <span class="muted">(optional)</span></label>
-                      <button type="button" class="btn btn-outline btn-sm" id="addButtonRowBtn">Add Button</button>
+                    <div class="field">
+                      <label for="commandResponse">Response Text</label>
+                      <textarea id="commandResponse" name="response" rows="3" placeholder="Reply message..."></textarea>
                     </div>
-                    <div id="buttonRows" class="button-rows"></div>
-                    <p class="hint">Supports quick reply, open link, and call buttons.</p>
-                  </div>
 
-                  <div class="form-actions">
-                    <button type="submit" class="btn btn-primary btn-block" id="commandSubmitBtn">Save Command</button>
-                    <button type="button" class="btn btn-outline btn-block" id="commandCancelBtn" hidden>Cancel Edit</button>
-                  </div>
-                </form>
-                <p id="command-feedback" class="feedback"></p>
-              </div>
-            </article>
+                    <div class="field-row">
+                      <div class="field">
+                        <label for="commandMediaType">Media Type</label>
+                        <select id="commandMediaType" name="mediaType">
+                          <option value="">No media</option>
+                          <% mediaTypes.forEach((type) => { %>
+                          <option value="<%= type %>"><%= type %></option>
+                          <% }) %>
+                        </select>
+                      </div>
+                      <div class="field">
+                        <label for="commandMediaUrl">Media URL</label>
+                        <input id="commandMediaUrl" name="mediaUrl" placeholder="https://..." />
+                      </div>
+                    </div>
 
-            <article class="card table-card">
-              <div class="card-header section-head">
-                <div>
-                  <h2 class="card-title">Command List</h2>
-                  <p class="card-description">All active auto-reply triggers</p>
+                    <div class="field">
+                      <label for="commandFileName">File Name <span class="muted">(document only, optional)</span></label>
+                      <input id="commandFileName" name="fileName" placeholder="brochure.pdf" />
+                    </div>
+
+                    <div class="field">
+                      <div class="field-head">
+                        <label>Buttons <span class="muted">(optional)</span></label>
+                        <button type="button" class="btn btn-outline btn-sm" id="addButtonRowBtn">Add Button</button>
+                      </div>
+                      <div id="buttonRows" class="button-rows"></div>
+                      <p class="hint">Supports quick reply, open link, and call buttons.</p>
+                    </div>
+
+                    <div class="form-actions">
+                      <button type="submit" class="btn btn-primary btn-block" id="commandSubmitBtn">Save Command</button>
+                      <button type="button" class="btn btn-outline btn-block" id="commandCancelBtn" hidden>Cancel Edit</button>
+                    </div>
+                  </form>
+                  <p id="command-feedback" class="feedback"></p>
                 </div>
-              </div>
-              <div class="card-content no-pad">
-                <div class="table-wrap">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Trigger</th>
-                        <th>Category</th>
-                        <th>Response</th>
-                        <th>Media</th>
-                        <th></th>
-                      </tr>
-                    </thead>
-                    <tbody id="command-table-body">
-                      <% if (!customCommands.length) { %>
-                      <tr>
-                        <td colspan="5" class="muted">No custom commands yet</td>
-                      </tr>
-                      <% } %>
+              </article>
 
-                      <% customCommands.forEach((item) => { %>
-                      <tr data-trigger="<%= item.trigger %>">
-                        <td><code><%= item.trigger %></code></td>
-                        <td><span class="badge badge-outline"><%= item.category %></span></td>
-                        <td class="cell-message"><%= item.response %></td>
-                        <td>
-                          <% if (item.mediaType) { %>
-                          <span class="badge badge-outline"><%= item.mediaType %></span>
-                          <% } else { %>
-                          <span class="muted">-</span>
-                          <% } %>
-                        </td>
-                        <td class="cell-action">
-                          <button class="btn btn-ghost btn-sm btn-edit-command" data-trigger="<%= item.trigger %>">Edit</button>
-                          <button class="btn btn-ghost btn-sm btn-delete-command" data-trigger="<%= item.trigger %>">Delete</button>
-                        </td>
-                      </tr>
-                      <% }) %>
-                    </tbody>
-                  </table>
+              <article class="card table-card">
+                <div class="card-header section-head">
+                  <div>
+                    <h2 class="card-title">Command List</h2>
+                    <p class="card-description">All active auto-reply triggers</p>
+                  </div>
                 </div>
-              </div>
-            </article>
+                <div class="card-content no-pad">
+                  <div class="table-wrap">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Trigger</th>
+                          <th>Category</th>
+                          <th>Response</th>
+                          <th>Media</th>
+                          <th></th>
+                        </tr>
+                      </thead>
+                      <tbody id="command-table-body">
+                        <% if (!customCommands.length) { %>
+                        <tr>
+                          <td colspan="5" class="muted">No custom commands yet</td>
+                        </tr>
+                        <% } %>
+
+                        <% customCommands.forEach((item) => { %>
+                        <tr data-trigger="<%= item.trigger %>">
+                          <td><code><%= item.trigger %></code></td>
+                          <td><span class="badge badge-outline"><%= item.category %></span></td>
+                          <td class="cell-message"><%= item.response %></td>
+                          <td>
+                            <% if (item.mediaType) { %>
+                            <span class="badge badge-outline"><%= item.mediaType %></span>
+                            <% } else { %>
+                            <span class="muted">-</span>
+                            <% } %>
+                          </td>
+                          <td class="cell-action">
+                            <button class="btn btn-ghost btn-sm btn-edit-command" data-trigger="<%= item.trigger %>">Edit</button>
+                            <button class="btn btn-ghost btn-sm btn-delete-command" data-trigger="<%= item.trigger %>">Delete</button>
+                          </td>
+                        </tr>
+                        <% }) %>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </article>
+            </div>
           </section>
         </div>
       </main>

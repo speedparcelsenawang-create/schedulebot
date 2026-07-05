@@ -12,10 +12,21 @@ const waQrWrap = document.getElementById('wa-qr-wrap');
 const waQrEmpty = document.getElementById('wa-qr-empty');
 const waQrCaption = document.getElementById('wa-qr-caption');
 const waQrImage = waQrWrap ? waQrWrap.querySelector('img.qr') : null;
+const methodTabQr = document.getElementById('methodTabQr');
+const methodTabPhone = document.getElementById('methodTabPhone');
+const qrMethodPanel = document.getElementById('qr-method');
+const phoneMethodPanel = document.getElementById('phone-method');
+const pairingPhoneInput = document.getElementById('pairingPhone');
+const requestPairingBtn = document.getElementById('requestPairingBtn');
+const pairingFeedback = document.getElementById('pairing-feedback');
+const pairingCodeWrap = document.getElementById('pairing-code-wrap');
+const pairingCodeValue = document.getElementById('pairing-code-value');
 const sidebar = document.getElementById('sidebar');
 const sidebarOverlay = document.getElementById('sidebarOverlay');
 const sidebarMenuBtn = document.getElementById('sidebarMenuBtn');
 const navItems = Array.from(document.querySelectorAll('.sidebar-nav .nav-item'));
+const pages = Array.from(document.querySelectorAll('.page[data-page]'));
+const DEFAULT_PAGE_HASH = '#account';
 
 let hasLoadedGroups = false;
 
@@ -37,6 +48,21 @@ function setActiveNavItemByHash(hash) {
     const href = item.getAttribute('href') || '';
     item.classList.toggle('active', href === hash);
   });
+}
+
+function showPageByHash(hash) {
+  if (!pages.length) return;
+
+  const normalizedHash = String(hash || '').replace('#', '') || DEFAULT_PAGE_HASH.replace('#', '');
+  const targetPage = pages.find((page) => page.getAttribute('data-page') === normalizedHash);
+  const fallbackPage = pages.find((page) => page.getAttribute('data-page') === DEFAULT_PAGE_HASH.replace('#', ''));
+  const pageToShow = targetPage || fallbackPage || pages[0];
+
+  pages.forEach((page) => {
+    page.hidden = page !== pageToShow;
+  });
+
+  setActiveNavItemByHash(`#${pageToShow.getAttribute('data-page')}`);
 }
 
 function formatLocalDateTime(isoString) {
@@ -93,6 +119,88 @@ function renderWhatsAppState(state) {
       }
     }
   }
+
+  const pairingCode = typeof state.pairingCode === 'string' ? state.pairingCode : '';
+  if (pairingCodeWrap && pairingCodeValue) {
+    if (pairingCode) {
+      pairingCodeValue.textContent = pairingCode;
+      pairingCodeWrap.hidden = false;
+    } else {
+      pairingCodeValue.textContent = '';
+      pairingCodeWrap.hidden = true;
+    }
+  }
+
+  if (isReady) {
+    setActiveConnectionMethod('qr');
+  }
+}
+
+function setActiveConnectionMethod(method) {
+  if (!methodTabQr || !methodTabPhone || !qrMethodPanel || !phoneMethodPanel) return;
+
+  const isPhone = method === 'phone';
+  methodTabQr.classList.toggle('active', !isPhone);
+  methodTabPhone.classList.toggle('active', isPhone);
+  qrMethodPanel.hidden = isPhone;
+  phoneMethodPanel.hidden = !isPhone;
+}
+
+if (methodTabQr) {
+  methodTabQr.addEventListener('click', () => setActiveConnectionMethod('qr'));
+}
+
+if (methodTabPhone) {
+  methodTabPhone.addEventListener('click', () => setActiveConnectionMethod('phone'));
+}
+
+if (requestPairingBtn) {
+  requestPairingBtn.addEventListener('click', async () => {
+    const phoneNumber = pairingPhoneInput ? pairingPhoneInput.value.trim() : '';
+    if (!phoneNumber) {
+      if (pairingFeedback) {
+        pairingFeedback.textContent = 'Please enter a phone number';
+        pairingFeedback.style.color = '#b42318';
+      }
+      return;
+    }
+
+    requestPairingBtn.disabled = true;
+    if (pairingFeedback) {
+      pairingFeedback.textContent = 'Requesting pairing code...';
+      pairingFeedback.style.color = '#5d645d';
+    }
+    if (pairingCodeWrap) pairingCodeWrap.hidden = true;
+
+    try {
+      const response = await fetch('/api/whatsapp/pairing-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phoneNumber }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to request pairing code');
+      }
+
+      if (pairingCodeValue && pairingCodeWrap) {
+        pairingCodeValue.textContent = data.code || '';
+        pairingCodeWrap.hidden = false;
+      }
+      if (pairingFeedback) {
+        pairingFeedback.textContent = 'Pairing code generated, enter it in WhatsApp.';
+        pairingFeedback.style.color = '#136f63';
+      }
+    } catch (error) {
+      if (pairingFeedback) {
+        pairingFeedback.textContent = error.message;
+        pairingFeedback.style.color = '#b42318';
+      }
+    } finally {
+      requestPairingBtn.disabled = false;
+    }
+  });
 }
 
 async function refreshWhatsAppState() {
@@ -199,16 +307,21 @@ if (sidebarOverlay) {
 
 if (navItems.length) {
   navItems.forEach((item) => {
-    item.addEventListener('click', () => {
+    item.addEventListener('click', (event) => {
+      event.preventDefault();
       const hash = item.getAttribute('href') || '';
-      setActiveNavItemByHash(hash);
+      window.history.pushState(null, '', hash);
+      showPageByHash(hash);
       closeSidebar();
     });
   });
 
-  setActiveNavItemByHash(window.location.hash || '#account');
+  showPageByHash(window.location.hash || DEFAULT_PAGE_HASH);
   window.addEventListener('hashchange', () => {
-    setActiveNavItemByHash(window.location.hash || '#account');
+    showPageByHash(window.location.hash || DEFAULT_PAGE_HASH);
+  });
+  window.addEventListener('popstate', () => {
+    showPageByHash(window.location.hash || DEFAULT_PAGE_HASH);
   });
 }
 
@@ -433,7 +546,8 @@ function fillCommandForm(command) {
   if (commandSubmitBtn) commandSubmitBtn.textContent = 'Update Command';
   if (commandCancelBtn) commandCancelBtn.hidden = false;
 
-  window.location.hash = '#custom-commands';
+  window.history.pushState(null, '', '#custom-commands');
+  showPageByHash('#custom-commands');
   commandForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 

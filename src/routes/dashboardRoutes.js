@@ -146,6 +146,16 @@ function createDashboardRouter(whatsappService) {
     return res.json(waState);
   });
 
+  router.post('/api/whatsapp/pairing-code', async (req, res) => {
+    try {
+      const { phoneNumber } = req.body || {};
+      const code = await whatsappService.requestPairingCode(phoneNumber);
+      return res.json({ code });
+    } catch (error) {
+      return res.status(400).json({ error: error.message });
+    }
+  });
+
   return router;
 }
 

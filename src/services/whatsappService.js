@@ -22,6 +22,8 @@ class WhatsAppService {
     this.initPromise = null;
     this.authPath = path.join(process.cwd(), '.baileys_auth');
     this.defaultDialCode = String(process.env.DEFAULT_DIAL_CODE || '60').replace(/\D/g, '') || '60';
+    this.pairingCode = null;
+    this.isRequestingPairingCode = false;
   }
 
   async init() {
@@ -99,6 +101,7 @@ class WhatsAppService {
         this.isInitializing = false;
         this.reconnectAttempts = 0;
         this.qrCodeDataUrl = null;
+        this.pairingCode = null;
         if (!wasReady) {
           console.log('[WA] Client ready');
         }
@@ -121,6 +124,7 @@ class WhatsAppService {
             console.error('[WA] Failed to reset auth:', error.message);
           }
           this.qrCodeDataUrl = null;
+          this.pairingCode = null;
           this.scheduleReinitialize('logged_out');
           return;
         }
@@ -159,7 +163,41 @@ class WhatsAppService {
       ready: this.ready,
       status: this.lastStatus,
       qrCodeDataUrl: this.qrCodeDataUrl,
+      pairingCode: this.pairingCode,
     };
+  }
+
+  async requestPairingCode(phoneNumber) {
+    if (!this.sock) {
+      throw new Error('WhatsApp client is not ready yet, please wait a moment');
+    }
+
+    if (this.ready) {
+      throw new Error('WhatsApp is already connected');
+    }
+
+    if (this.sock.authState?.creds?.registered) {
+      throw new Error('This session is already registered, restart the connection to re-pair');
+    }
+
+    if (this.isRequestingPairingCode) {
+      throw new Error('A pairing code request is already in progress');
+    }
+
+    const normalized = this.normalizePersonalNumber(phoneNumber);
+    if (!normalized || normalized.length < 8) {
+      throw new Error('Invalid phone number');
+    }
+
+    this.isRequestingPairingCode = true;
+    try {
+      const code = await this.sock.requestPairingCode(normalized);
+      this.pairingCode = code;
+      this.lastStatus = 'Enter the pairing code in WhatsApp > Linked Devices';
+      return code;
+    } finally {
+      this.isRequestingPairingCode = false;
+    }
   }
 
   buildChatId(targetType, target) {

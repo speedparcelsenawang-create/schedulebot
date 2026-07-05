@@ -279,6 +279,72 @@ button {
   letter-spacing: -0.02em;
 }
 
+/* ---------- Pages ---------- */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.page[hidden] {
+  display: none;
+}
+
+/* ---------- Connection method tabs ---------- */
+
+.method-tabs {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 18px;
+}
+
+.method-tab {
+  border: none;
+  background: transparent;
+  color: var(--muted-foreground);
+  font-size: 12.5px;
+  font-weight: 500;
+  padding: 7px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.method-tab:hover {
+  color: var(--foreground);
+}
+
+.method-tab.active {
+  background: var(--surface-2);
+  color: var(--foreground);
+}
+
+.method-panel[hidden] {
+  display: none;
+}
+
+.pairing-code-wrap {
+  margin-top: 16px;
+  padding: 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  text-align: center;
+}
+
+.pairing-code {
+  margin: 6px 0 12px;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+}
+
 /* ---------- Grid ---------- */
 
 .grid.two-cols {
