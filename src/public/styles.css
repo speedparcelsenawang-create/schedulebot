@@ -217,26 +217,29 @@ a {
 }
 
 .menu-btn {
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   border-radius: 6px;
-  border: 1px solid transparent;
-  background: transparent;
-  color: var(--text-dim);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
   display: none;
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  flex-shrink: 0;
 }
 
 .menu-btn:hover {
-  background: var(--surface-2);
+  background: var(--border);
   color: var(--text);
 }
 
 .menu-btn svg {
   width: 17px;
   height: 17px;
+  display: block;
+  stroke: currentColor;
 }
 
 .top-nav-title-wrap p {
