@@ -241,10 +241,10 @@ button {
 }
 
 .container {
-  padding: 24px;
+  padding: 32px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 28px;
   max-width: 1180px;
   width: 100%;
   margin: 0 auto;
@@ -255,14 +255,14 @@ button {
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
+  gap: 16px;
 }
 
 .stat-card {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 14px 16px;
+  padding: 18px 20px;
 }
 
 .stat-label {
@@ -284,7 +284,7 @@ button {
 .grid.two-cols {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: 20px;
   align-items: start;
 }
 
@@ -297,7 +297,7 @@ button {
 }
 
 .card-header {
-  padding: 16px 20px;
+  padding: 20px 24px;
   border-bottom: 1px solid var(--border);
 }
 
@@ -309,13 +309,13 @@ button {
 }
 
 .card-description {
-  margin: 4px 0 0;
+  margin: 6px 0 0;
   font-size: 12.5px;
   color: var(--muted-foreground);
 }
 
 .card-content {
-  padding: 20px;
+  padding: 24px;
 }
 
 .card-content.no-pad {
@@ -326,25 +326,25 @@ button {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 16px;
 }
 
 /* ---------- Status card ---------- */
 
 .status-row {
-  margin-bottom: 14px;
+  margin-bottom: 18px;
 }
 
 .qr-wrap {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
-  padding: 16px;
+  gap: 14px;
+  padding: 20px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  margin-bottom: 14px;
+  margin-bottom: 18px;
 }
 
 .qr {
@@ -433,16 +433,16 @@ button {
 /* ---------- Forms ---------- */
 
 .field {
-  margin-bottom: 14px;
+  margin-bottom: 18px;
 }
 
 .field:last-of-type {
-  margin-bottom: 16px;
+  margin-bottom: 22px;
 }
 
 label {
   display: block;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
   font-size: 12.5px;
   font-weight: 500;
   color: var(--foreground);
@@ -456,7 +456,7 @@ textarea {
   border: 1px solid var(--input);
   border-radius: 6px;
   color: var(--foreground);
-  padding: 8px 10px;
+  padding: 9px 12px;
   font-size: 13.5px;
   font-family: inherit;
   transition: border-color 0.12s ease, box-shadow 0.12s ease;
@@ -484,8 +484,8 @@ textarea:focus {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 12px;
-  margin-bottom: 14px;
+  padding: 16px;
+  margin-bottom: 18px;
 }
 
 .group-tools-head {
@@ -493,7 +493,7 @@ textarea:focus {
   align-items: flex-end;
   justify-content: space-between;
   gap: 10px;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 
 .group-tools-head label {
@@ -593,7 +593,7 @@ thead tr {
 
 th {
   text-align: left;
-  padding: 10px 20px;
+  padding: 12px 24px;
   font-size: 11px;
   font-weight: 500;
   text-transform: uppercase;
@@ -603,7 +603,7 @@ th {
 }
 
 td {
-  padding: 12px 20px;
+  padding: 14px 24px;
   border-bottom: 1px solid var(--border);
   vertical-align: middle;
 }
@@ -673,15 +673,29 @@ tbody tr:hover {
 
 @media (max-width: 520px) {
   .container {
-    padding: 16px;
+    padding: 20px;
+    gap: 20px;
   }
 
   .top-nav-inner {
-    padding: 0 16px;
+    padding: 0 20px;
   }
 
   .card-header,
   .card-content {
-    padding: 16px;
+    padding: 18px;
+  }
+
+  th,
+  td {
+    padding: 12px 18px;
+  }
+
+  .stats-grid {
+    gap: 12px;
+  }
+
+  .grid.two-cols {
+    gap: 16px;
   }
 }
