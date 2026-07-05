@@ -5,3 +5,4 @@ node_modules
 .baileys_auth
 .schedulebot.lock
 npm-debug.log*
+.data/

@@ -1,7 +1,32 @@
-const commands = [];
+const fs = require('fs');
+const path = require('path');
+
+const DATA_DIR = path.join(process.cwd(), '.data');
+const DATA_FILE = path.join(DATA_DIR, 'custom-commands.json');
 
 const ALLOWED_CATEGORIES = ['General', 'Greeting', 'Info', 'Utility', 'Fun', 'Media', 'Other'];
 const ALLOWED_MEDIA_TYPES = ['image', 'video', 'audio', 'document'];
+
+function loadCommands() {
+  try {
+    const raw = fs.readFileSync(DATA_FILE, 'utf8');
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    return [];
+  }
+}
+
+function persistCommands() {
+  try {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+    fs.writeFileSync(DATA_FILE, JSON.stringify(commands, null, 2));
+  } catch (error) {
+    console.error('[CustomCommandStore] Failed to persist commands:', error.message);
+  }
+}
+
+const commands = loadCommands();
 
 function normalizeCategory(value) {
   const raw = String(value || '').trim();
@@ -106,6 +131,7 @@ function createCommand(payload) {
   if (parsedButtons) entry.buttons = parsedButtons;
 
   commands.push(entry);
+  persistCommands();
   return entry;
 }
 
@@ -146,6 +172,7 @@ function updateCommand(trigger, payload) {
   if (parsedButtons) target.buttons = parsedButtons;
   else delete target.buttons;
 
+  persistCommands();
   return target;
 }
 
@@ -155,6 +182,7 @@ function removeCommand(trigger) {
   if (index === -1) return false;
 
   commands.splice(index, 1);
+  persistCommands();
   return true;
 }
 
