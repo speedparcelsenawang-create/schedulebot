@@ -140,14 +140,15 @@ function createDashboardRouter(whatsappService) {
 
   router.post('/api/schedules', (req, res) => {
     const { targetType, targetValue, message, scheduleAt, timezoneOffsetMinutes } = req.body;
+    const normalizedTargetType = targetType === 'personal-manual' ? 'personal' : targetType;
 
-    if (!targetType || !targetValue || !message || !scheduleAt) {
+    if (!normalizedTargetType || !targetValue || !message || !scheduleAt) {
       return res.status(400).json({
         error: 'targetType, targetValue, message, and scheduleAt are required',
       });
     }
 
-    if (!['personal', 'group'].includes(targetType)) {
+    if (!['personal', 'group'].includes(normalizedTargetType)) {
       return res.status(400).json({ error: 'targetType must be personal or group' });
     }
 
@@ -159,7 +160,7 @@ function createDashboardRouter(whatsappService) {
     }
 
     const created = scheduleStore.createSchedule({
-      targetType,
+      targetType: normalizedTargetType,
       targetValue,
       message,
       scheduleAt: parsed.toISOString(),
@@ -186,6 +187,18 @@ function createDashboardRouter(whatsappService) {
     try {
       const groups = await whatsappService.listGroups();
       return res.json({ groups });
+    } catch (error) {
+      if (error.message === 'WhatsApp client is not ready') {
+        return res.status(409).json({ error: error.message });
+      }
+      return next(error);
+    }
+  });
+
+  router.get('/api/whatsapp/personal-chats', async (req, res, next) => {
+    try {
+      const chats = await whatsappService.listPersonalChats();
+      return res.json({ chats });
     } catch (error) {
       if (error.message === 'WhatsApp client is not ready') {
         return res.status(409).json({ error: error.message });

@@ -1,12 +1,17 @@
 const form = document.getElementById('schedule-form');
 const feedback = document.getElementById('form-feedback');
 const targetTypeInput = document.getElementById('targetType');
+const targetValueField = document.getElementById('targetValueField');
 const targetValueLabel = document.getElementById('targetValueLabel');
 const targetHint = document.getElementById('targetHint');
 const groupTools = document.getElementById('groupTools');
 const groupPicker = document.getElementById('groupPicker');
 const groupFetchHint = document.getElementById('groupFetchHint');
 const refreshGroupsBtn = document.getElementById('refreshGroupsBtn');
+const personalChatTools = document.getElementById('personalChatTools');
+const personalChatPicker = document.getElementById('personalChatPicker');
+const personalChatFetchHint = document.getElementById('personalChatFetchHint');
+const refreshPersonalChatsBtn = document.getElementById('refreshPersonalChatsBtn');
 const waStatus = document.getElementById('wa-status');
 const waConnectedWrap = document.getElementById('wa-connected-wrap');
 const waQrWrap = document.getElementById('wa-qr-wrap');
@@ -46,6 +51,7 @@ const DEFAULT_PAGE_HASH = '#account';
 const THEME_STORAGE_KEY = 'schedulebot-theme';
 
 let hasLoadedGroups = false;
+let hasLoadedPersonalChats = false;
 let isWhatsAppReady = false;
 
 const PAGE_TITLE_MAP = {
@@ -453,6 +459,63 @@ function setGroupPickerOptions(groups) {
   groupPicker.innerHTML = baseOption + optionHtml;
 }
 
+function setPersonalChatHint(text, color = '#5d645d') {
+  if (!personalChatFetchHint) return;
+  personalChatFetchHint.textContent = text;
+  personalChatFetchHint.style.color = color;
+}
+
+function setPersonalChatPickerOptions(chats) {
+  if (!personalChatPicker) return;
+
+  const baseOption = '<option value="">Select a personal chat...</option>';
+  const optionHtml = chats
+    .map((chat) => {
+      const safeId = String(chat.id || '').replace(/"/g, '&quot;');
+      const safeName = String(chat.name || chat.phone || 'Unnamed');
+      const safePhone = String(chat.phone || '').trim();
+      const label = safePhone ? `${safeName} (${safePhone})` : safeName;
+      return `<option value="${safeId}">${label}</option>`;
+    })
+    .join('');
+
+  personalChatPicker.innerHTML = baseOption + optionHtml;
+}
+
+async function loadPersonalChats(force = false) {
+  if (!personalChatPicker) return;
+  if (hasLoadedPersonalChats && !force) return;
+
+  personalChatPicker.disabled = true;
+  if (refreshPersonalChatsBtn) refreshPersonalChatsBtn.disabled = true;
+  setPersonalChatHint('Fetching personal chat list...', '#5d645d');
+
+  try {
+    const response = await fetch('/api/whatsapp/personal-chats');
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to fetch personal chats');
+    }
+
+    const chats = Array.isArray(data.chats) ? data.chats : [];
+    setPersonalChatPickerOptions(chats);
+    hasLoadedPersonalChats = true;
+
+    if (chats.length) {
+      setPersonalChatHint('Select a chat to auto-fill the destination ID.', '#5d645d');
+    } else {
+      setPersonalChatHint('No personal chats found on this account.', '#9f4f03');
+    }
+  } catch (error) {
+    setPersonalChatPickerOptions([]);
+    setPersonalChatHint(error.message, '#b42318');
+  } finally {
+    personalChatPicker.disabled = false;
+    if (refreshPersonalChatsBtn) refreshPersonalChatsBtn.disabled = false;
+  }
+}
+
 async function loadGroups(force = false) {
   if (!groupPicker) return;
   if (hasLoadedGroups && !force) return;
@@ -488,19 +551,31 @@ async function loadGroups(force = false) {
 }
 
 function syncTargetInputContent() {
-  if (!targetTypeInput || !targetValueLabel || !targetHint) return;
+  if (!targetTypeInput || !targetValueLabel || !targetHint || !targetValueField) return;
 
   if (targetTypeInput.value === 'group') {
+    targetValueField.hidden = false;
     targetValueLabel.textContent = 'Group ID (example: 1203630xxxx@g.us)';
     targetHint.textContent = 'You can enter 1203630xxxx only or with @g.us suffix';
     if (groupTools) groupTools.hidden = false;
+    if (personalChatTools) personalChatTools.hidden = true;
     loadGroups();
     return;
   }
 
+  if (targetTypeInput.value === 'personal-chat') {
+    targetValueField.hidden = true;
+    if (groupTools) groupTools.hidden = true;
+    if (personalChatTools) personalChatTools.hidden = false;
+    loadPersonalChats();
+    return;
+  }
+
+  targetValueField.hidden = false;
   targetValueLabel.textContent = 'Destination Number (62812xxxx)';
   targetHint.textContent = 'Personal example: 6281234567890';
   if (groupTools) groupTools.hidden = true;
+  if (personalChatTools) personalChatTools.hidden = true;
 }
 
 if (targetTypeInput) {
@@ -546,9 +621,24 @@ if (groupPicker) {
   });
 }
 
+if (personalChatPicker) {
+  personalChatPicker.addEventListener('change', () => {
+    const selected = String(personalChatPicker.value || '').trim();
+    const targetValueInput = document.getElementById('targetValue');
+    if (!targetValueInput || !selected) return;
+    targetValueInput.value = selected;
+  });
+}
+
 if (refreshGroupsBtn) {
   refreshGroupsBtn.addEventListener('click', () => {
     loadGroups(true);
+  });
+}
+
+if (refreshPersonalChatsBtn) {
+  refreshPersonalChatsBtn.addEventListener('click', () => {
+    loadPersonalChats(true);
   });
 }
 
@@ -564,13 +654,29 @@ if (form) {
     event.preventDefault();
 
     const formData = new FormData(form);
+    const selectedType = String(formData.get('targetType') || '').trim();
+    const selectedPersonalChatId = String(personalChatPicker?.value || '').trim();
+    const targetValueRaw = String(formData.get('targetValue') || '').trim();
+    const normalizedTargetType = selectedType === 'personal-manual' ? 'personal' : selectedType;
+    const normalizedTargetValue = selectedType === 'personal-chat'
+      ? selectedPersonalChatId
+      : targetValueRaw;
+
     const payload = {
-      targetType: String(formData.get('targetType') || '').trim(),
-      targetValue: String(formData.get('targetValue') || '').trim(),
+      targetType: normalizedTargetType,
+      targetValue: normalizedTargetValue,
       message: String(formData.get('message') || '').trim(),
       scheduleAt: String(formData.get('scheduleAt') || '').trim(),
       timezoneOffsetMinutes: new Date().getTimezoneOffset(),
     };
+
+    if (!payload.targetValue) {
+      feedback.textContent = selectedType === 'personal-chat'
+        ? 'Please select a personal chat first.'
+        : 'Target value is required.';
+      feedback.style.color = '#b42318';
+      return;
+    }
 
     feedback.textContent = 'Saving schedule...';
     feedback.style.color = '#5d645d';

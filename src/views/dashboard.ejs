@@ -198,18 +198,19 @@
                     <div class="field">
                       <label for="targetType">Target Type</label>
                       <select id="targetType" name="targetType" required>
-                        <option value="personal" selected>Personal Chat</option>
-                        <option value="group">Group Chat</option>
+                        <option value="group" selected>Group Chat</option>
+                        <option value="personal-chat">Personal Chat (From Current Chats)</option>
+                        <option value="personal-manual">Personal Chat (Manual ID)</option>
                       </select>
                     </div>
 
-                    <div class="field">
-                      <label for="targetValue" id="targetValueLabel">Destination Number (62812xxxx)</label>
+                    <div class="field" id="targetValueField">
+                      <label for="targetValue" id="targetValueLabel">Group ID (example: 1203630xxxx@g.us)</label>
                       <input id="targetValue" name="targetValue" required />
-                      <p class="hint" id="targetHint">Personal example: 6281234567890</p>
+                      <p class="hint" id="targetHint">You can enter 1203630xxxx only or with @g.us suffix</p>
                     </div>
 
-                    <div class="group-tools" id="groupTools" hidden>
+                    <div class="group-tools" id="groupTools">
                       <div class="group-tools-head">
                         <label for="groupPicker">Select Group From WhatsApp Account</label>
                         <button type="button" class="btn btn-outline btn-sm" id="refreshGroupsBtn">Refresh Groups</button>
@@ -218,6 +219,17 @@
                         <option value="">Loading group list...</option>
                       </select>
                       <p class="hint" id="groupFetchHint">Pick a group to auto-fill the ID.</p>
+                    </div>
+
+                    <div class="group-tools" id="personalChatTools" hidden>
+                      <div class="group-tools-head">
+                        <label for="personalChatPicker">Generate From Current Personal Chats</label>
+                        <button type="button" class="btn btn-outline btn-sm" id="refreshPersonalChatsBtn">Refresh Chats</button>
+                      </div>
+                      <select id="personalChatPicker">
+                        <option value="">Loading personal chat list...</option>
+                      </select>
+                      <p class="hint" id="personalChatFetchHint">Pick a personal chat to auto-fill the destination ID.</p>
                     </div>
 
                     <div class="field">

@@ -367,6 +367,31 @@ class WhatsAppService {
       .filter((group) => group.id)
       .sort((a, b) => a.name.localeCompare(b.name, 'id'));
   }
+
+  async listPersonalChats() {
+    if (!this.sock || !this.ready) {
+      throw new Error('WhatsApp client is not ready');
+    }
+
+    const chats = await this.sock.chats.all();
+    return chats
+      .filter((chat) => {
+        const jid = String(chat?.id || '');
+        if (!jid.endsWith('@s.whatsapp.net')) return false;
+        if (jid.includes('-')) return false;
+        return true;
+      })
+      .map((chat) => {
+        const jid = String(chat.id || '');
+        const phone = this.normalizePersonalNumber(jid);
+        return {
+          id: jid,
+          name: String(chat.name || chat.notify || chat.pushName || phone || 'Unnamed'),
+          phone,
+        };
+      })
+      .sort((a, b) => a.name.localeCompare(b.name, 'id'));
+  }
 }
 
 module.exports = new WhatsAppService();
