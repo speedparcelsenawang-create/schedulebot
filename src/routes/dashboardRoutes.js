@@ -51,7 +51,7 @@ function parseClientLocalDateTime(scheduleAt, timezoneOffsetMinutes) {
 function createDashboardRouter(whatsappService) {
   const router = express.Router();
 
-  router.get('/', (req, res) => {
+  function getDashboardViewData() {
     const schedules = scheduleStore.listSchedules();
     const waState = whatsappService.getConnectionState();
     const scheduleStats = schedules.reduce(
@@ -67,7 +67,7 @@ function createDashboardRouter(whatsappService) {
 
     const customCommands = customCommandStore.listCommands();
 
-    res.render('dashboard', {
+    return {
       schedules,
       waState,
       scheduleStats,
@@ -75,7 +75,15 @@ function createDashboardRouter(whatsappService) {
       customCommands,
       commandCategories: customCommandStore.ALLOWED_CATEGORIES,
       mediaTypes: customCommandStore.ALLOWED_MEDIA_TYPES,
-    });
+    };
+  }
+
+  router.get('/', (req, res) => {
+    res.render('dashboard', getDashboardViewData());
+  });
+
+  router.get('/commands', (req, res) => {
+    res.render('commands', getDashboardViewData());
   });
 
   router.get('/api/custom-commands', (req, res) => {

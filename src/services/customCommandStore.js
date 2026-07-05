@@ -6,6 +6,15 @@ const DATA_FILE = path.join(DATA_DIR, 'custom-commands.json');
 
 const ALLOWED_CATEGORIES = ['General', 'Greeting', 'Info', 'Utility', 'Fun', 'Media', 'Other'];
 const ALLOWED_MEDIA_TYPES = ['image', 'video', 'audio', 'document'];
+const DEFAULT_COMMANDS = [
+  {
+    trigger: '.alive',
+    response: '✅ Bot is alive and running.',
+    description: 'Check bot online status quickly',
+    category: 'Utility',
+    createdAt: new Date().toISOString(),
+  },
+];
 
 function loadCommands() {
   try {
@@ -27,6 +36,33 @@ function persistCommands() {
 }
 
 const commands = loadCommands();
+
+function ensureDefaultCommands() {
+  let changed = false;
+
+  for (const fallback of DEFAULT_COMMANDS) {
+    const key = normalizeTrigger(fallback.trigger);
+    if (!key) continue;
+
+    const exists = commands.some((item) => item.trigger === key);
+    if (exists) continue;
+
+    commands.push({
+      trigger: key,
+      response: String(fallback.response || '').trim(),
+      description: String(fallback.description || '').trim(),
+      category: normalizeCategory(fallback.category),
+      createdAt: fallback.createdAt || new Date().toISOString(),
+    });
+    changed = true;
+  }
+
+  if (changed) {
+    persistCommands();
+  }
+}
+
+ensureDefaultCommands();
 
 function normalizeCategory(value) {
   const raw = String(value || '').trim();

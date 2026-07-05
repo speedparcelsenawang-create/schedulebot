@@ -354,6 +354,11 @@ button {
   gap: 28px;
 }
 
+.page-tools {
+  display: flex;
+  justify-content: flex-end;
+}
+
 .page[hidden] {
   display: none;
 }
