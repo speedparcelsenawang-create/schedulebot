@@ -206,9 +206,9 @@ if (navItems.length) {
     });
   });
 
-  setActiveNavItemByHash(window.location.hash || '#status');
+  setActiveNavItemByHash(window.location.hash || '#account');
   window.addEventListener('hashchange', () => {
-    setActiveNavItemByHash(window.location.hash || '#status');
+    setActiveNavItemByHash(window.location.hash || '#account');
   });
 }
 
@@ -287,6 +287,229 @@ document.querySelectorAll('.btn-delete').forEach((button) => {
       if (!response.ok) {
         const data = await response.json();
         throw new Error(data.error || 'Failed to delete schedule');
+      }
+      window.location.reload();
+    } catch (error) {
+      window.alert(error.message);
+    }
+  });
+});
+
+/* ---------- Custom Commands ---------- */
+
+const commandForm = document.getElementById('command-form');
+const commandFeedback = document.getElementById('command-feedback');
+const commandTriggerInput = document.getElementById('commandTrigger');
+const commandOriginalTrigger = document.getElementById('commandOriginalTrigger');
+const commandSubmitBtn = document.getElementById('commandSubmitBtn');
+const commandCancelBtn = document.getElementById('commandCancelBtn');
+const addButtonRowBtn = document.getElementById('addButtonRowBtn');
+const buttonRows = document.getElementById('buttonRows');
+
+const commandsByTrigger = new Map(
+  (Array.isArray(window.__CUSTOM_COMMANDS__) ? window.__CUSTOM_COMMANDS__ : []).map((item) => [
+    item.trigger,
+    item,
+  ])
+);
+
+function buttonRowTemplate(button = {}) {
+  const row = document.createElement('div');
+  row.className = 'button-row';
+
+  let params = {};
+  if (typeof button.buttonParamsJson === 'string') {
+    try {
+      params = JSON.parse(button.buttonParamsJson);
+    } catch (error) {
+      params = {};
+    }
+  }
+
+  const name = button.name || 'quick_reply';
+
+  row.innerHTML = `
+    <select class="btn-type-select">
+      <option value="quick_reply">Quick Reply</option>
+      <option value="cta_url">Open Link</option>
+      <option value="cta_call">Call</option>
+    </select>
+    <input class="btn-label-input" placeholder="Button label" />
+    <input class="btn-value-input" placeholder="Value (id / URL / phone)" />
+    <button type="button" class="btn btn-ghost btn-sm btn-remove-row" aria-label="Remove button">&times;</button>
+  `;
+
+  const typeSelect = row.querySelector('.btn-type-select');
+  const labelInput = row.querySelector('.btn-label-input');
+  const valueInput = row.querySelector('.btn-value-input');
+  const removeBtn = row.querySelector('.btn-remove-row');
+
+  typeSelect.value = name;
+  labelInput.value = params.display_text || '';
+  valueInput.value = params.id || params.url || params.phone_number || '';
+
+  function syncPlaceholder() {
+    if (typeSelect.value === 'cta_url') {
+      valueInput.placeholder = 'https://example.com';
+    } else if (typeSelect.value === 'cta_call') {
+      valueInput.placeholder = '+60123456789';
+    } else {
+      valueInput.placeholder = 'reply_id';
+    }
+  }
+  syncPlaceholder();
+  typeSelect.addEventListener('change', syncPlaceholder);
+
+  removeBtn.addEventListener('click', () => row.remove());
+
+  return row;
+}
+
+function addButtonRow(button) {
+  if (!buttonRows) return;
+  buttonRows.appendChild(buttonRowTemplate(button));
+}
+
+function clearButtonRows() {
+  if (buttonRows) buttonRows.innerHTML = '';
+}
+
+function collectButtonsFromRows() {
+  if (!buttonRows) return [];
+
+  return Array.from(buttonRows.querySelectorAll('.button-row'))
+    .map((row) => {
+      const type = row.querySelector('.btn-type-select').value;
+      const label = row.querySelector('.btn-label-input').value.trim();
+      const value = row.querySelector('.btn-value-input').value.trim();
+      if (!label || !value) return null;
+
+      let params = { display_text: label };
+      if (type === 'cta_url') params.url = value;
+      else if (type === 'cta_call') params.phone_number = value;
+      else params.id = value;
+
+      return { name: type, buttonParamsJson: JSON.stringify(params) };
+    })
+    .filter(Boolean);
+}
+
+if (addButtonRowBtn) {
+  addButtonRowBtn.addEventListener('click', () => addButtonRow());
+}
+
+function setCommandFeedback(message, color) {
+  if (!commandFeedback) return;
+  commandFeedback.textContent = message;
+  commandFeedback.style.color = color || '#5d645d';
+}
+
+function resetCommandForm() {
+  if (!commandForm) return;
+  commandForm.reset();
+  clearButtonRows();
+  if (commandOriginalTrigger) commandOriginalTrigger.value = '';
+  if (commandTriggerInput) commandTriggerInput.disabled = false;
+  if (commandSubmitBtn) commandSubmitBtn.textContent = 'Save Command';
+  if (commandCancelBtn) commandCancelBtn.hidden = true;
+}
+
+function fillCommandForm(command) {
+  if (!commandForm || !command) return;
+
+  commandForm.querySelector('#commandTrigger').value = command.trigger || '';
+  commandForm.querySelector('#commandCategory').value = command.category || 'General';
+  commandForm.querySelector('#commandDescription').value = command.description || '';
+  commandForm.querySelector('#commandResponse').value = command.response || '';
+  commandForm.querySelector('#commandMediaType').value = command.mediaType || '';
+  commandForm.querySelector('#commandMediaUrl').value = command.mediaUrl || '';
+  commandForm.querySelector('#commandFileName').value = command.fileName || '';
+
+  clearButtonRows();
+  (command.buttons || []).forEach((button) => addButtonRow(button));
+
+  if (commandOriginalTrigger) commandOriginalTrigger.value = command.trigger || '';
+  if (commandTriggerInput) commandTriggerInput.disabled = true;
+  if (commandSubmitBtn) commandSubmitBtn.textContent = 'Update Command';
+  if (commandCancelBtn) commandCancelBtn.hidden = false;
+
+  window.location.hash = '#custom-commands';
+  commandForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+if (commandCancelBtn) {
+  commandCancelBtn.addEventListener('click', resetCommandForm);
+}
+
+if (commandForm) {
+  commandForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    const formData = new FormData(commandForm);
+    const originalTrigger = commandOriginalTrigger ? commandOriginalTrigger.value : '';
+    const isEditing = Boolean(originalTrigger);
+
+    const payload = {
+      trigger: String(formData.get('trigger') || '').trim(),
+      category: String(formData.get('category') || '').trim(),
+      description: String(formData.get('description') || '').trim(),
+      response: String(formData.get('response') || '').trim(),
+      mediaType: String(formData.get('mediaType') || '').trim(),
+      mediaUrl: String(formData.get('mediaUrl') || '').trim(),
+      fileName: String(formData.get('fileName') || '').trim(),
+      buttons: collectButtonsFromRows(),
+    };
+
+    setCommandFeedback(isEditing ? 'Updating command...' : 'Saving command...', '#5d645d');
+
+    try {
+      const url = isEditing
+        ? `/api/custom-commands/${encodeURIComponent(originalTrigger)}`
+        : '/api/custom-commands';
+      const method = isEditing ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to save command');
+      }
+
+      setCommandFeedback(isEditing ? 'Command updated' : 'Command saved', '#136f63');
+      setTimeout(() => window.location.reload(), 350);
+    } catch (error) {
+      setCommandFeedback(error.message, '#b42318');
+    }
+  });
+}
+
+document.querySelectorAll('.btn-edit-command').forEach((button) => {
+  button.addEventListener('click', () => {
+    const trigger = button.dataset.trigger;
+    const command = commandsByTrigger.get(trigger);
+    if (command) fillCommandForm(command);
+  });
+});
+
+document.querySelectorAll('.btn-delete-command').forEach((button) => {
+  button.addEventListener('click', async () => {
+    const trigger = button.dataset.trigger;
+    if (!trigger) return;
+
+    const confirmDelete = window.confirm(`Delete command ${trigger}?`);
+    if (!confirmDelete) return;
+
+    try {
+      const response = await fetch(`/api/custom-commands/${encodeURIComponent(trigger)}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to delete command');
       }
       window.location.reload();
     } catch (error) {

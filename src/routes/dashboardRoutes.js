@@ -1,6 +1,7 @@
 const express = require('express');
 const dayjs = require('dayjs');
 const scheduleStore = require('../services/scheduleStore');
+const customCommandStore = require('../services/customCommandStore');
 
 function parseClientLocalDateTime(scheduleAt, timezoneOffsetMinutes) {
   const raw = String(scheduleAt || '').trim();
@@ -40,12 +41,48 @@ function createDashboardRouter(whatsappService) {
       { total: 0, pending: 0, sent: 0, failed: 0 }
     );
 
+    const customCommands = customCommandStore.listCommands();
+
     res.render('dashboard', {
       schedules,
       waState,
       scheduleStats,
       dayjs,
+      customCommands,
+      commandCategories: customCommandStore.ALLOWED_CATEGORIES,
+      mediaTypes: customCommandStore.ALLOWED_MEDIA_TYPES,
     });
+  });
+
+  router.get('/api/custom-commands', (req, res) => {
+    return res.json({ commands: customCommandStore.listCommands() });
+  });
+
+  router.post('/api/custom-commands', (req, res) => {
+    try {
+      const created = customCommandStore.createCommand(req.body || {});
+      return res.status(201).json(created);
+    } catch (error) {
+      return res.status(400).json({ error: error.message });
+    }
+  });
+
+  router.put('/api/custom-commands/:trigger', (req, res) => {
+    try {
+      const updated = customCommandStore.updateCommand(req.params.trigger, req.body || {});
+      return res.json(updated);
+    } catch (error) {
+      const status = error.message === 'Command not found' ? 404 : 400;
+      return res.status(status).json({ error: error.message });
+    }
+  });
+
+  router.delete('/api/custom-commands/:trigger', (req, res) => {
+    const removed = customCommandStore.removeCommand(req.params.trigger);
+    if (!removed) {
+      return res.status(404).json({ error: 'Command not found' });
+    }
+    return res.status(204).send();
   });
 
   router.post('/api/schedules', (req, res) => {

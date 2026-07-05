@@ -1,1 +1,3 @@
 - [npm git-dependency firewall block](npm-git-dependency-firewall-block.md) — package-firewall.replit.local 403s any package whose deps include a git URL (e.g. baileys→libsignal); workaround via override + public registry install.
+- [WhatsApp interactive buttons via baileys](baileys-interactive-buttons.md) — native flow buttons need generateWAMessageFromContent + relayMessage, with legacy buttons/type:1 fallback on error.
+- [In-memory feature stores](in-memory-stores-convention.md) — this project's schedule/custom-command data stores are in-memory (no DB/JSON persistence); follow this pattern unless told otherwise.

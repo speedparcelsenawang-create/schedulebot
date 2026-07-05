@@ -4,6 +4,9 @@ const qrcode = require('qrcode');
 const pino = require('pino');
 const baileys = require('@whiskeysockets/baileys');
 
+const customCommandStore = require('./customCommandStore');
+const { sendInteractiveButtons } = require('../lib/interactiveButtons');
+
 const makeWASocket = baileys.default;
 const { DisconnectReason, useMultiFileAuthState, fetchLatestBaileysVersion } = baileys;
 
@@ -66,6 +69,14 @@ class WhatsAppService {
     });
 
     this.sock.ev.on('creds.update', saveCreds);
+
+    this.sock.ev.on('messages.upsert', async (event) => {
+      try {
+        await this.handleIncomingMessages(event);
+      } catch (error) {
+        console.error('[WA] Failed to handle incoming message:', error.message);
+      }
+    });
 
     this.sock.ev.on('connection.update', async (update) => {
       const { connection, lastDisconnect, qr } = update;
@@ -221,6 +232,74 @@ class WhatsAppService {
 
     console.log(`[WA] Sending message to ${chatId}`);
     await this.sock.sendMessage(chatId, { text: String(message || '') });
+  }
+
+  async handleIncomingMessages(event) {
+    if (!this.sock || event.type !== 'notify') return;
+
+    for (const message of event.messages || []) {
+      if (!message?.message || message.key?.fromMe) continue;
+
+      const chatId = message.key?.remoteJid;
+      if (!chatId) continue;
+
+      const text =
+        message.message.conversation ||
+        message.message.extendedTextMessage?.text ||
+        message.message.imageMessage?.caption ||
+        message.message.videoMessage?.caption ||
+        '';
+
+      const matched = customCommandStore.matchCommand(text);
+      if (!matched) continue;
+
+      await this.replyWithCustomCommand(chatId, matched, message);
+    }
+  }
+
+  async replyWithCustomCommand(chatId, command, quotedMessage) {
+    const caption = String(command.response || '').replace(/\\n/g, '\n');
+    const options = { quoted: quotedMessage };
+
+    if (command.mediaUrl && command.mediaType) {
+      const mediaSource = { url: command.mediaUrl };
+      const fileName = command.fileName || 'file';
+      const hasButtons = Boolean(command.buttons && command.buttons.length);
+
+      if (hasButtons) {
+        await sendInteractiveButtons(
+          this.sock,
+          chatId,
+          { text: caption || 'Choose an option:', buttons: command.buttons },
+          options
+        );
+      }
+
+      const payload = hasButtons ? {} : { caption };
+
+      if (command.mediaType === 'image') {
+        await this.sock.sendMessage(chatId, { image: mediaSource, ...payload }, hasButtons ? {} : options);
+      } else if (command.mediaType === 'video') {
+        await this.sock.sendMessage(chatId, { video: mediaSource, ...payload }, hasButtons ? {} : options);
+      } else if (command.mediaType === 'audio') {
+        await this.sock.sendMessage(
+          chatId,
+          { audio: mediaSource, mimetype: 'audio/mpeg', ptt: false, ...payload },
+          hasButtons ? {} : options
+        );
+      } else if (command.mediaType === 'document') {
+        await this.sock.sendMessage(
+          chatId,
+          { document: mediaSource, fileName, mimetype: 'application/octet-stream', ...payload },
+          hasButtons ? {} : options
+        );
+      }
+      return;
+    }
+
+    if (caption) {
+      await sendInteractiveButtons(this.sock, chatId, { text: caption, buttons: command.buttons }, options);
+    }
   }
 
   async listGroups() {
