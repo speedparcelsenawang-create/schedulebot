@@ -212,7 +212,7 @@ button {
   top: 0;
   z-index: 10;
   height: 56px;
-  background: rgba(9, 9, 11, 0.85);
+  background: color-mix(in srgb, var(--background) 85%, transparent);
   backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--border);
 }
