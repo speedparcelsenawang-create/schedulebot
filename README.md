@@ -84,6 +84,7 @@ Project ini sudah disediakan konfigurasi Railway dalam file `railway.json`.
 
 	- `TZ=Asia/Kuala_Lumpur`
 	- `DEFAULT_DIAL_CODE=60`
+	- `NIXPACKS_NODE_VERSION=20` (fallback jika Railway masih detect Node 18)
 
 	`PORT` tidak perlu diset manual kerana Railway akan inject otomatis.
 

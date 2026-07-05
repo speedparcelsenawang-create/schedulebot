@@ -20,6 +20,9 @@
   "author": "",
   "license": "ISC",
   "type": "commonjs",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "bugs": {
     "url": "https://github.com/speedparcelsenawang-create/schedulebot/issues"
   },
