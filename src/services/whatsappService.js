@@ -13,6 +13,7 @@ const {
   useMultiFileAuthState,
   fetchLatestBaileysVersion,
   makeCacheableSignalKeyStore,
+  makeInMemoryStore,
   normalizeMessageContent,
 } = baileys;
 
@@ -30,6 +31,7 @@ class WhatsAppService {
     this.defaultDialCode = String(process.env.DEFAULT_DIAL_CODE || '60').replace(/\D/g, '') || '60';
     this.pairingCode = null;
     this.isRequestingPairingCode = false;
+    this.store = null;
   }
 
   async init() {
@@ -66,6 +68,9 @@ class WhatsAppService {
     }
 
     const socketLogger = pino({ level: 'silent' });
+    if (!this.store) {
+      this.store = makeInMemoryStore({ logger: socketLogger });
+    }
 
     this.sock = makeWASocket({
       auth: {
@@ -80,10 +85,13 @@ class WhatsAppService {
       defaultQueryTimeoutMs: Number(process.env.WA_QUERY_TIMEOUT_MS || 60000),
       version,
     });
+    const currentSocket = this.sock;
 
-    this.sock.ev.on('creds.update', saveCreds);
+    this.store.bind(currentSocket.ev);
 
-    this.sock.ev.on('messages.upsert', async (event) => {
+    currentSocket.ev.on('creds.update', saveCreds);
+
+    currentSocket.ev.on('messages.upsert', async (event) => {
       try {
         await this.handleIncomingMessages(event);
       } catch (error) {
@@ -91,7 +99,7 @@ class WhatsAppService {
       }
     });
 
-    this.sock.ev.on('connection.update', async (update) => {
+    currentSocket.ev.on('connection.update', async (update) => {
       const { connection, lastDisconnect, qr } = update;
 
       if (qr) {
@@ -119,13 +127,19 @@ class WhatsAppService {
       }
 
       if (connection === 'close') {
+        if (currentSocket !== this.sock) {
+          return;
+        }
+
         this.ready = false;
         this.isInitializing = false;
 
         const statusCode = lastDisconnect?.error?.output?.statusCode;
+        const disconnectReason = this.describeDisconnectReason(statusCode);
         const isLoggedOut = statusCode === DisconnectReason.loggedOut || statusCode === 401;
-        this.lastStatus = `Disconnected: ${statusCode || 'unknown'}`;
-        console.error('[WA] Disconnected event:', statusCode || 'unknown');
+        const isRestartRequired = statusCode === DisconnectReason.restartRequired;
+        this.lastStatus = `Disconnected: ${disconnectReason}`;
+        console.error('[WA] Disconnected event:', disconnectReason);
 
         if (isLoggedOut) {
           try {
@@ -140,31 +154,52 @@ class WhatsAppService {
           return;
         }
 
+        if (isRestartRequired) {
+          this.scheduleReinitialize('restart_required', 0);
+          return;
+        }
+
         this.scheduleReinitialize('disconnected');
       }
     });
   }
 
-  scheduleReinitialize(trigger) {
+  describeDisconnectReason(statusCode) {
+    if (statusCode === DisconnectReason.restartRequired) return 'restart_required (515)';
+    if (statusCode === DisconnectReason.connectionLost) return 'connection_lost (408)';
+    if (statusCode === DisconnectReason.connectionClosed) return 'connection_closed (428)';
+    if (statusCode === DisconnectReason.connectionReplaced) return 'connection_replaced (440)';
+    if (statusCode === DisconnectReason.loggedOut) return 'logged_out (401)';
+    if (statusCode === DisconnectReason.badSession) return 'bad_session (500)';
+    if (statusCode === DisconnectReason.multideviceMismatch) return 'multidevice_mismatch (411)';
+    if (statusCode === DisconnectReason.forbidden) return 'forbidden (403)';
+    if (statusCode === DisconnectReason.unavailableService) return 'unavailable_service (503)';
+    return statusCode ? `unknown (${statusCode})` : 'unknown';
+  }
+
+  scheduleReinitialize(trigger, delayOverrideMs) {
     if (this.reconnectTimer) return;
 
     this.reconnectAttempts += 1;
-    const reconnectDelayMs = Math.min(4000 * (2 ** (this.reconnectAttempts - 1)), 60000);
+    const reconnectDelayMs = typeof delayOverrideMs === 'number'
+      ? delayOverrideMs
+      : Math.min(4000 * (2 ** (this.reconnectAttempts - 1)), 60000);
 
     this.lastStatus = `Reconnecting after ${trigger} in ${Math.round(reconnectDelayMs / 1000)}s...`;
     this.reconnectTimer = setTimeout(async () => {
       this.reconnectTimer = null;
+      const socketToClose = this.sock;
+      this.sock = null;
+      this.isInitializing = false;
 
       try {
-        if (this.sock) {
-          this.sock.end(new Error('reconnect'));
+        if (socketToClose) {
+          socketToClose.end(new Error('reconnect'));
         }
       } catch (error) {
         console.error('[WA] End socket error:', error.message);
       }
 
-      this.sock = null;
-      this.isInitializing = false;
       this.init();
     }, reconnectDelayMs);
   }
@@ -373,7 +408,7 @@ class WhatsAppService {
       throw new Error('WhatsApp client is not ready');
     }
 
-    const chats = await this.sock.chats.all();
+    const chats = this.store?.chats?.all?.() || [];
     return chats
       .filter((chat) => {
         const jid = String(chat?.id || '');
