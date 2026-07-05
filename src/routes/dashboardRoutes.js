@@ -1,7 +1,31 @@
 const express = require('express');
+const fs = require('fs');
+const path = require('path');
 const dayjs = require('dayjs');
+const multer = require('multer');
 const scheduleStore = require('../services/scheduleStore');
 const customCommandStore = require('../services/customCommandStore');
+
+const uploadDir = path.join(process.cwd(), 'uploads');
+const uploadStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    fs.mkdirSync(uploadDir, { recursive: true });
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname || '').toLowerCase();
+    const baseName = path
+      .basename(file.originalname || 'media', ext)
+      .toLowerCase()
+      .replace(/[^a-z0-9_-]+/g, '-');
+    cb(null, `${Date.now()}-${baseName || 'media'}${ext}`);
+  },
+});
+
+const upload = multer({
+  storage: uploadStorage,
+  limits: { fileSize: 20 * 1024 * 1024 },
+});
 
 function parseClientLocalDateTime(scheduleAt, timezoneOffsetMinutes) {
   const raw = String(scheduleAt || '').trim();
@@ -64,6 +88,31 @@ function createDashboardRouter(whatsappService) {
       return res.status(201).json(created);
     } catch (error) {
       return res.status(400).json({ error: error.message });
+    }
+  });
+
+  router.post('/api/custom-commands/upload-media', upload.single('mediaFile'), (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: 'No file uploaded' });
+      }
+
+      const mediaType = String(req.body?.mediaType || '').trim();
+      const allowedMedia = new Set(customCommandStore.ALLOWED_MEDIA_TYPES);
+      if (!allowedMedia.has(mediaType)) {
+        return res.status(400).json({ error: 'Invalid media type for upload' });
+      }
+
+      const host = req.get('host');
+      const protocol = req.protocol || 'http';
+      const mediaUrl = `${protocol}://${host}/uploads/${req.file.filename}`;
+
+      return res.status(201).json({
+        mediaUrl,
+        fileName: req.file.originalname || req.file.filename,
+      });
+    } catch (error) {
+      return res.status(400).json({ error: error.message || 'Failed to upload media file' });
     }
   });
 

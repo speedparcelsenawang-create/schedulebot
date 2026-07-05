@@ -72,3 +72,21 @@ Bot WhatsApp untuk menjadwalkan pengiriman pesan melalui web dashboard.
 
 - Data schedule saat ini disimpan di memori (akan hilang jika server restart).
 - Session WhatsApp disimpan lokal di folder `.wwebjs_auth`.
+
+## Deploy ke Railway
+
+Project ini sudah disediakan konfigurasi Railway dalam file `railway.json`.
+
+1. Push repository ke GitHub.
+2. Di Railway, pilih `New Project` -> `Deploy from GitHub Repo`.
+3. Pilih repository ini.
+4. Set environment variables berikut di Railway:
+
+	- `TZ=Asia/Kuala_Lumpur`
+	- `DEFAULT_DIAL_CODE=60`
+
+	`PORT` tidak perlu diset manual kerana Railway akan inject otomatis.
+
+5. Deploy.
+
+Healthcheck endpoint tersedia di `GET /healthz`.

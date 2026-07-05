@@ -79,6 +79,7 @@ button {
 .app {
   display: flex;
   min-height: 100vh;
+  min-height: 100dvh;
 }
 
 .sidebar {
@@ -91,6 +92,7 @@ button {
   position: sticky;
   top: 0;
   height: 100vh;
+  height: 100dvh;
 }
 
 .sidebar-header {
@@ -252,6 +254,8 @@ button {
 .top-nav-title-wrap {
   flex: 1;
   min-width: 0;
+  display: flex;
+  align-items: center;
 }
 
 .top-nav-title-wrap p {
@@ -283,9 +287,24 @@ button {
   font-weight: 600;
 }
 
-.top-nav-subtitle {
+.top-nav-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: 12px;
   color: var(--muted-foreground);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.top-nav-breadcrumb .crumb-sep {
+  opacity: 0.7;
+}
+
+.top-nav-breadcrumb .crumb.is-current {
+  color: var(--foreground);
+  font-weight: 500;
 }
 
 .container {
@@ -339,6 +358,10 @@ button {
   display: none;
 }
 
+html.has-route-hash .page[data-page] {
+  display: none !important;
+}
+
 /* ---------- Connection method tabs ---------- */
 
 .method-tabs {
@@ -370,6 +393,11 @@ button {
 .method-tab.active {
   background: var(--surface-2);
   color: var(--foreground);
+}
+
+.method-tab:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .method-panel[hidden] {
@@ -474,6 +502,60 @@ button {
   font-size: 12.5px;
   text-align: center;
   color: var(--muted-foreground);
+}
+
+.connected-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 24px;
+  background: var(--success-bg);
+  border: 1px solid color-mix(in srgb, var(--success) 35%, var(--border));
+  border-radius: var(--radius);
+  margin-bottom: 18px;
+}
+
+#wa-connected-wrap {
+  display: none;
+}
+
+body.wa-ready #wa-connected-wrap {
+  display: flex !important;
+}
+
+.connected-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  background: var(--success);
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.connected-title {
+  margin: 0;
+  color: var(--success);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.connected-subtitle {
+  margin: 0;
+  text-align: center;
+  color: var(--muted-foreground);
+  font-size: 12.5px;
+}
+
+body.wa-ready #wa-qr-wrap,
+body.wa-ready #wa-qr-empty,
+body.wa-ready #account-target-tips {
+  display: none !important;
 }
 
 .tips {
@@ -740,6 +822,27 @@ code {
   color: var(--danger);
 }
 
+.btn-save-command {
+  background: #71717a;
+  border-color: #71717a;
+  color: #f4f4f5;
+}
+
+.btn-save-command.is-ready {
+  background: #16a34a;
+  border-color: #16a34a;
+  color: #ffffff;
+}
+
+.btn-save-command:disabled {
+  cursor: not-allowed;
+  opacity: 1;
+}
+
+.btn-save-command.is-ready:hover {
+  opacity: 0.9;
+}
+
 .feedback {
   min-height: 18px;
   margin: 10px 0 0;
@@ -812,7 +915,9 @@ tbody tr:hover {
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
   z-index: 15;
 }
 
@@ -831,10 +936,14 @@ tbody tr:hover {
     position: fixed;
     left: 0;
     top: 0;
+    bottom: 0;
     z-index: 20;
     transform: translateX(-100%);
     transition: transform 0.2s ease;
     box-shadow: 0 0 0 1px var(--border);
+    height: auto;
+    max-height: 100vh;
+    max-height: 100dvh;
   }
 
   .sidebar.open {

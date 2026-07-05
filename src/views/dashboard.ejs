@@ -17,6 +17,12 @@
           document.documentElement.setAttribute('data-theme', 'dark');
         }
       })();
+
+      (function () {
+        if (window.location.hash) {
+          document.documentElement.classList.add('has-route-hash');
+        }
+      })();
     </script>
   </head>
   <body>
@@ -72,8 +78,13 @@
               </svg>
             </button>
             <div class="top-nav-title-wrap">
-              <p class="top-nav-title">Dashboard</p>
-              <p class="top-nav-subtitle">WhatsApp Schedule Control</p>
+              <nav class="top-nav-breadcrumb" aria-label="Breadcrumb">
+                <span class="crumb" id="breadcrumbRoot">Dashboard</span>
+                <span class="crumb-sep">/</span>
+                <span class="crumb" id="breadcrumbPage">Account</span>
+                <span class="crumb-sep" id="breadcrumbSectionSep" hidden>/</span>
+                <span class="crumb is-current" id="breadcrumbSection" hidden></span>
+              </nav>
             </div>
             <button class="icon-btn theme-toggle-btn" id="themeToggleBtn" type="button" aria-label="Toggle light/dark mode">
               <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -104,11 +115,17 @@
 
                   <div class="method-tabs">
                     <button type="button" class="method-tab active" id="methodTabQr" data-method="qr">QR Code</button>
-                    <button type="button" class="method-tab" id="methodTabPhone" data-method="phone">Phone Number</button>
+                    <button type="button" class="method-tab" id="methodTabPhone" data-method="phone" <%= waState.ready ? 'disabled' : '' %>>Phone Number</button>
                   </div>
 
                   <div id="qr-method" class="method-panel">
-                    <div id="wa-qr-wrap" class="qr-wrap" <%= waState.qrCodeDataUrl ? '' : 'hidden' %>>
+                    <div id="wa-connected-wrap" class="connected-wrap" <%= waState.ready ? '' : 'hidden' %>>
+                      <span class="connected-icon" aria-hidden="true">✓</span>
+                      <p class="connected-title">WhatsApp connected</p>
+                      <p class="connected-subtitle">Session is active. QR code is not needed right now.</p>
+                    </div>
+
+                    <div id="wa-qr-wrap" class="qr-wrap" <%= !waState.ready && waState.qrCodeDataUrl ? '' : 'hidden' %>>
                       <% if (waState.qrCodeDataUrl) { %>
                       <img src="<%= waState.qrCodeDataUrl %>" alt="QR WhatsApp" class="qr" />
                       <% } else { %>
@@ -116,7 +133,7 @@
                       <% } %>
                       <p id="wa-qr-caption" class="qr-caption">Scan this QR code from WhatsApp to connect the bot.</p>
                     </div>
-                    <p id="wa-qr-empty" class="muted" <%= waState.qrCodeDataUrl ? 'hidden' : '' %>>
+                    <p id="wa-qr-empty" class="muted" <%= !waState.ready && !waState.qrCodeDataUrl ? '' : 'hidden' %>>
                       QR will appear automatically when re-login is needed.
                     </p>
                   </div>
@@ -124,10 +141,10 @@
                   <div id="phone-method" class="method-panel" hidden>
                     <div class="field">
                       <label for="pairingPhone">Phone Number</label>
-                      <input id="pairingPhone" placeholder="60812xxxxxxx" />
+                      <input id="pairingPhone" placeholder="60812xxxxxxx" <%= waState.ready ? 'disabled' : '' %> />
                       <p class="hint">Enter your WhatsApp number with country code, no + or spaces.</p>
                     </div>
-                    <button type="button" class="btn btn-primary btn-block" id="requestPairingBtn">Get Pairing Code</button>
+                    <button type="button" class="btn btn-primary btn-block" id="requestPairingBtn" <%= waState.ready ? 'disabled' : '' %>>Get Pairing Code</button>
                     <p id="pairing-feedback" class="feedback"></p>
 
                     <div id="pairing-code-wrap" class="pairing-code-wrap" hidden>
@@ -137,7 +154,7 @@
                     </div>
                   </div>
 
-                  <ul class="tips muted">
+                  <ul class="tips muted" id="account-target-tips" hidden>
                     <li>Personal: use a number like 62812xxxx</li>
                     <li>Group: use the group ID, with or without @g.us</li>
                   </ul>
@@ -166,7 +183,12 @@
               </div>
             </div>
 
-            <section class="grid two-cols">
+            <div class="method-tabs" id="schedule-tabs" role="tablist" aria-label="Schedule tabs">
+              <button type="button" class="method-tab active" id="scheduleTabCreate" data-tab="create" role="tab" aria-controls="schedule-create-panel" aria-selected="true">Create Schedule</button>
+              <button type="button" class="method-tab" id="scheduleTabList" data-tab="list" role="tab" aria-controls="schedule-list-panel" aria-selected="false">Schedule List</button>
+            </div>
+
+            <div class="method-panel" id="schedule-create-panel" role="tabpanel" aria-labelledby="scheduleTabCreate">
               <article class="card" id="create-schedule">
                 <div class="card-header">
                   <h2 class="card-title">Create Schedule</h2>
@@ -214,7 +236,9 @@
                   <p id="form-feedback" class="feedback"></p>
                 </div>
               </article>
+            </div>
 
+            <div class="method-panel" id="schedule-list-panel" role="tabpanel" aria-labelledby="scheduleTabList" hidden>
               <article class="card table-card" id="schedule-list">
                 <div class="card-header section-head">
                   <div>
@@ -269,11 +293,16 @@
                   </div>
                 </div>
               </article>
-            </section>
+            </div>
           </section>
 
           <section class="page" data-page="custom-commands" id="custom-commands" hidden>
-            <div class="grid two-cols">
+            <div class="method-tabs" id="command-tabs" role="tablist" aria-label="Custom command tabs">
+              <button type="button" class="method-tab active" id="commandTabCreate" data-tab="create" role="tab" aria-controls="command-create-panel" aria-selected="true">Add Command</button>
+              <button type="button" class="method-tab" id="commandTabList" data-tab="list" role="tab" aria-controls="command-list-panel" aria-selected="false">Command List</button>
+            </div>
+
+            <div class="method-panel" id="command-create-panel" role="tabpanel" aria-labelledby="commandTabCreate">
               <article class="card">
                 <div class="card-header">
                   <h2 class="card-title">Add Custom Command</h2>
@@ -289,63 +318,83 @@
                     </div>
 
                     <div class="field">
-                      <label for="commandCategory">Category</label>
-                      <select id="commandCategory" name="category">
-                        <% commandCategories.forEach((cat) => { %>
-                        <option value="<%= cat %>"><%= cat %></option>
+                      <label for="commandMediaType">Media Type</label>
+                      <select id="commandMediaType" name="mediaType" required>
+                        <option value="">Select media type first</option>
+                        <option value="none">No media</option>
+                        <% mediaTypes.forEach((type) => { %>
+                        <option value="<%= type %>"><%= type %></option>
                         <% }) %>
                       </select>
+                      <p class="hint">Select media type to show related fields.</p>
                     </div>
 
-                    <div class="field">
-                      <label for="commandDescription">Description</label>
-                      <input id="commandDescription" name="description" placeholder="Short note about this command" />
-                    </div>
+                    <div id="command-advanced-fields" hidden>
+                      <div class="field" id="commandResponseField">
+                        <label for="commandResponse">Response Text</label>
+                        <textarea id="commandResponse" name="response" rows="3" placeholder="Reply message..."></textarea>
+                      </div>
 
-                    <div class="field">
-                      <label for="commandResponse">Response Text</label>
-                      <textarea id="commandResponse" name="response" rows="3" placeholder="Reply message..."></textarea>
-                    </div>
-
-                    <div class="field-row">
-                      <div class="field">
-                        <label for="commandMediaType">Media Type</label>
-                        <select id="commandMediaType" name="mediaType">
-                          <option value="">No media</option>
-                          <% mediaTypes.forEach((type) => { %>
-                          <option value="<%= type %>"><%= type %></option>
-                          <% }) %>
+                      <div class="field" id="commandMediaSourceField">
+                        <label for="commandMediaSource">Media Source</label>
+                        <select id="commandMediaSource" name="mediaSource">
+                          <option value="url" selected>By URL</option>
+                          <option value="upload">Upload File</option>
                         </select>
                       </div>
-                      <div class="field">
-                        <label for="commandMediaUrl">Media URL</label>
+
+                      <div class="field" id="commandMediaUrlField">
+                        <label for="commandMediaUrl">Media URL <span class="muted">(optional)</span></label>
                         <input id="commandMediaUrl" name="mediaUrl" placeholder="https://..." />
                       </div>
-                    </div>
 
-                    <div class="field">
-                      <label for="commandFileName">File Name <span class="muted">(document only, optional)</span></label>
-                      <input id="commandFileName" name="fileName" placeholder="brochure.pdf" />
-                    </div>
-
-                    <div class="field">
-                      <div class="field-head">
-                        <label>Buttons <span class="muted">(optional)</span></label>
-                        <button type="button" class="btn btn-outline btn-sm" id="addButtonRowBtn">Add Button</button>
+                      <div class="field" id="commandMediaUploadField" hidden>
+                        <label for="commandMediaUpload">Upload Media File <span class="muted">(max 20MB)</span></label>
+                        <input id="commandMediaUpload" name="mediaUpload" type="file" />
+                        <p class="hint" id="commandMediaUploadHint">Choose a file to upload and use as media source.</p>
                       </div>
-                      <div id="buttonRows" class="button-rows"></div>
-                      <p class="hint">Supports quick reply, open link, and call buttons.</p>
+
+                      <div class="field" id="commandFileNameField" hidden>
+                        <label for="commandFileName">File Name <span class="muted">(document only, optional)</span></label>
+                        <input id="commandFileName" name="fileName" placeholder="brochure.pdf" />
+                      </div>
+
+                      <div class="field" id="commandButtonsField">
+                        <div class="field-head">
+                          <label>Buttons <span class="muted">(optional)</span></label>
+                          <button type="button" class="btn btn-outline btn-sm" id="addButtonRowBtn">Add Button</button>
+                        </div>
+                        <div id="buttonRows" class="button-rows"></div>
+                        <p class="hint">Supports quick reply, open link, call, and copy code buttons.</p>
+                      </div>
+
+                      <div class="field-row optional-meta-row" id="commandOptionalMetaRow">
+                        <div class="field">
+                          <label for="commandCategory">Category <span class="muted">(optional)</span></label>
+                          <select id="commandCategory" name="category">
+                            <% commandCategories.forEach((cat) => { %>
+                            <option value="<%= cat %>"><%= cat %></option>
+                            <% }) %>
+                          </select>
+                        </div>
+                        <div class="field">
+                          <label for="commandDescription">Description <span class="muted">(optional)</span></label>
+                          <input id="commandDescription" name="description" placeholder="Short note about this command" />
+                        </div>
+                      </div>
                     </div>
 
                     <div class="form-actions">
-                      <button type="submit" class="btn btn-primary btn-block" id="commandSubmitBtn">Save Command</button>
+                      <button type="submit" class="btn btn-block btn-save-command" id="commandSubmitBtn" disabled>Save Command</button>
                       <button type="button" class="btn btn-outline btn-block" id="commandCancelBtn" hidden>Cancel Edit</button>
                     </div>
                   </form>
                   <p id="command-feedback" class="feedback"></p>
                 </div>
               </article>
+            </div>
 
+            <div class="method-panel" id="command-list-panel" role="tabpanel" aria-labelledby="commandTabList" hidden>
               <article class="card table-card">
                 <div class="card-header section-head">
                   <div>

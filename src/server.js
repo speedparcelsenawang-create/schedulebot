@@ -11,6 +11,7 @@ const createDashboardRouter = require('./routes/dashboardRoutes');
 const app = express();
 const port = Number(process.env.PORT || 3000);
 const lockFilePath = path.join(process.cwd(), '.schedulebot.lock');
+const uploadDir = path.join(process.cwd(), 'uploads');
 
 function setupSingleInstanceLock() {
   let existingPid = null;
@@ -57,6 +58,7 @@ function setupSingleInstanceLock() {
 }
 
 setupSingleInstanceLock();
+fs.mkdirSync(uploadDir, { recursive: true });
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
@@ -64,6 +66,11 @@ app.set('views', path.join(__dirname, 'views'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/public', express.static(path.join(__dirname, 'public')));
+app.use('/uploads', express.static(uploadDir));
+
+app.get('/healthz', (req, res) => {
+  return res.status(200).json({ ok: true, service: 'schedulebot' });
+});
 
 app.use('/', createDashboardRouter(whatsappService));
 

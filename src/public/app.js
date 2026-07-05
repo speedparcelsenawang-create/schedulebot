@@ -8,6 +8,7 @@ const groupPicker = document.getElementById('groupPicker');
 const groupFetchHint = document.getElementById('groupFetchHint');
 const refreshGroupsBtn = document.getElementById('refreshGroupsBtn');
 const waStatus = document.getElementById('wa-status');
+const waConnectedWrap = document.getElementById('wa-connected-wrap');
 const waQrWrap = document.getElementById('wa-qr-wrap');
 const waQrEmpty = document.getElementById('wa-qr-empty');
 const waQrCaption = document.getElementById('wa-qr-caption');
@@ -16,21 +17,83 @@ const methodTabQr = document.getElementById('methodTabQr');
 const methodTabPhone = document.getElementById('methodTabPhone');
 const qrMethodPanel = document.getElementById('qr-method');
 const phoneMethodPanel = document.getElementById('phone-method');
+const scheduleTabCreate = document.getElementById('scheduleTabCreate');
+const scheduleTabList = document.getElementById('scheduleTabList');
+const scheduleCreatePanel = document.getElementById('schedule-create-panel');
+const scheduleListPanel = document.getElementById('schedule-list-panel');
+const commandTabCreate = document.getElementById('commandTabCreate');
+const commandTabList = document.getElementById('commandTabList');
+const commandCreatePanel = document.getElementById('command-create-panel');
+const commandListPanel = document.getElementById('command-list-panel');
 const pairingPhoneInput = document.getElementById('pairingPhone');
 const requestPairingBtn = document.getElementById('requestPairingBtn');
 const pairingFeedback = document.getElementById('pairing-feedback');
 const pairingCodeWrap = document.getElementById('pairing-code-wrap');
 const pairingCodeValue = document.getElementById('pairing-code-value');
+const accountTargetTips = document.getElementById('account-target-tips');
 const sidebar = document.getElementById('sidebar');
 const sidebarOverlay = document.getElementById('sidebarOverlay');
 const sidebarMenuBtn = document.getElementById('sidebarMenuBtn');
 const themeToggleBtn = document.getElementById('themeToggleBtn');
+const topNavTitle = document.getElementById('topNavTitle');
+const breadcrumbRoot = document.getElementById('breadcrumbRoot');
+const breadcrumbPage = document.getElementById('breadcrumbPage');
+const breadcrumbSectionSep = document.getElementById('breadcrumbSectionSep');
+const breadcrumbSection = document.getElementById('breadcrumbSection');
 const navItems = Array.from(document.querySelectorAll('.sidebar-nav .nav-item'));
 const pages = Array.from(document.querySelectorAll('.page[data-page]'));
 const DEFAULT_PAGE_HASH = '#account';
 const THEME_STORAGE_KEY = 'schedulebot-theme';
 
 let hasLoadedGroups = false;
+let isWhatsAppReady = false;
+
+const PAGE_TITLE_MAP = {
+  account: 'Account',
+  schedule: 'Schedule',
+  'custom-commands': 'Custom Command',
+};
+
+function getActivePageKey() {
+  const activePage = pages.find((page) => !page.hidden);
+  return activePage ? String(activePage.getAttribute('data-page') || '') : '';
+}
+
+function getActiveAccountSectionLabel() {
+  if (!methodTabQr || !methodTabPhone) return '';
+  return methodTabPhone.classList.contains('active') ? 'Phone Number' : 'QR Code';
+}
+
+function getActiveScheduleSectionLabel() {
+  if (!scheduleTabCreate || !scheduleTabList) return '';
+  return scheduleTabList.classList.contains('active') ? 'Schedule List' : 'Create Schedule';
+}
+
+function getActiveCommandSectionLabel() {
+  if (!commandTabCreate || !commandTabList) return '';
+  return commandTabList.classList.contains('active') ? 'Command List' : 'Add Command';
+}
+
+function updateTopBreadcrumb() {
+  const activePageKey = getActivePageKey();
+  const pageTitle = PAGE_TITLE_MAP[activePageKey] || 'Dashboard';
+
+  let sectionTitle = '';
+  if (activePageKey === 'account') sectionTitle = getActiveAccountSectionLabel();
+  if (activePageKey === 'schedule') sectionTitle = getActiveScheduleSectionLabel();
+  if (activePageKey === 'custom-commands') sectionTitle = getActiveCommandSectionLabel();
+
+  if (topNavTitle) topNavTitle.textContent = pageTitle;
+  if (breadcrumbRoot) breadcrumbRoot.textContent = 'Dashboard';
+  if (breadcrumbPage) breadcrumbPage.textContent = pageTitle;
+  if (breadcrumbSection) {
+    breadcrumbSection.textContent = sectionTitle;
+    breadcrumbSection.hidden = !sectionTitle;
+  }
+  if (breadcrumbSectionSep) {
+    breadcrumbSectionSep.hidden = !sectionTitle;
+  }
+}
 
 function applyTheme(theme) {
   const normalized = theme === 'light' ? 'light' : 'dark';
@@ -94,6 +157,7 @@ function showPageByHash(hash) {
   });
 
   setActiveNavItemByHash(`#${pageToShow.getAttribute('data-page')}`);
+  updateTopBreadcrumb();
 }
 
 function formatLocalDateTime(isoString) {
@@ -126,6 +190,8 @@ function renderWhatsAppState(state) {
   if (!state || !waStatus) return;
 
   const isReady = Boolean(state.ready);
+  isWhatsAppReady = isReady;
+  document.body.classList.toggle('wa-ready', isReady);
   const statusText = String(state.status || (isReady ? 'WhatsApp connected' : 'Initializing...'));
   const qrCodeDataUrl = typeof state.qrCodeDataUrl === 'string' ? state.qrCodeDataUrl : '';
 
@@ -133,8 +199,40 @@ function renderWhatsAppState(state) {
   waStatus.classList.remove('status-ok', 'status-warn');
   waStatus.classList.add(isReady ? 'status-ok' : 'status-warn');
 
+  if (waConnectedWrap) {
+    waConnectedWrap.hidden = !isReady;
+  }
+
+  if (methodTabPhone) {
+    methodTabPhone.disabled = isReady;
+  }
+
+  if (pairingPhoneInput) {
+    pairingPhoneInput.disabled = isReady;
+  }
+
+  if (requestPairingBtn) {
+    requestPairingBtn.disabled = isReady;
+  }
+
+  if (pairingFeedback && isReady) {
+    pairingFeedback.textContent = 'Pairing via phone number is disabled while WhatsApp is connected.';
+    pairingFeedback.style.color = '#5d645d';
+  }
+
+  if (accountTargetTips) {
+    accountTargetTips.hidden = isReady;
+  }
+
   if (waQrWrap && waQrImage && waQrEmpty) {
-    if (qrCodeDataUrl) {
+    if (isReady) {
+      waQrImage.removeAttribute('src');
+      waQrWrap.hidden = true;
+      waQrEmpty.hidden = true;
+      if (waQrCaption) {
+        waQrCaption.textContent = '';
+      }
+    } else if (qrCodeDataUrl) {
       waQrImage.src = qrCodeDataUrl;
       waQrWrap.hidden = false;
       waQrEmpty.hidden = true;
@@ -175,6 +273,26 @@ function setActiveConnectionMethod(method) {
   methodTabPhone.classList.toggle('active', isPhone);
   qrMethodPanel.hidden = isPhone;
   phoneMethodPanel.hidden = !isPhone;
+  updateTopBreadcrumb();
+}
+
+function setTabbedPanel(activeTabKey, tabs, panels) {
+  const hasCreateTab = Boolean(tabs.create);
+  const hasListTab = Boolean(tabs.list);
+  const hasCreatePanel = Boolean(panels.create);
+  const hasListPanel = Boolean(panels.list);
+
+  if (!hasCreateTab || !hasListTab || !hasCreatePanel || !hasListPanel) return;
+
+  const isList = activeTabKey === 'list';
+  tabs.create.classList.toggle('active', !isList);
+  tabs.list.classList.toggle('active', isList);
+  tabs.create.setAttribute('aria-selected', String(!isList));
+  tabs.list.setAttribute('aria-selected', String(isList));
+
+  panels.create.hidden = isList;
+  panels.list.hidden = !isList;
+  updateTopBreadcrumb();
 }
 
 if (methodTabQr) {
@@ -182,11 +300,73 @@ if (methodTabQr) {
 }
 
 if (methodTabPhone) {
-  methodTabPhone.addEventListener('click', () => setActiveConnectionMethod('phone'));
+  methodTabPhone.addEventListener('click', () => {
+    if (isWhatsAppReady) return;
+    setActiveConnectionMethod('phone');
+  });
 }
+
+if (scheduleTabCreate) {
+  scheduleTabCreate.addEventListener('click', () => {
+    setTabbedPanel(
+      'create',
+      { create: scheduleTabCreate, list: scheduleTabList },
+      { create: scheduleCreatePanel, list: scheduleListPanel }
+    );
+  });
+}
+
+if (scheduleTabList) {
+  scheduleTabList.addEventListener('click', () => {
+    setTabbedPanel(
+      'list',
+      { create: scheduleTabCreate, list: scheduleTabList },
+      { create: scheduleCreatePanel, list: scheduleListPanel }
+    );
+  });
+}
+
+if (commandTabCreate) {
+  commandTabCreate.addEventListener('click', () => {
+    setTabbedPanel(
+      'create',
+      { create: commandTabCreate, list: commandTabList },
+      { create: commandCreatePanel, list: commandListPanel }
+    );
+  });
+}
+
+if (commandTabList) {
+  commandTabList.addEventListener('click', () => {
+    setTabbedPanel(
+      'list',
+      { create: commandTabCreate, list: commandTabList },
+      { create: commandCreatePanel, list: commandListPanel }
+    );
+  });
+}
+
+setTabbedPanel(
+  'create',
+  { create: scheduleTabCreate, list: scheduleTabList },
+  { create: scheduleCreatePanel, list: scheduleListPanel }
+);
+setTabbedPanel(
+  'create',
+  { create: commandTabCreate, list: commandTabList },
+  { create: commandCreatePanel, list: commandListPanel }
+);
 
 if (requestPairingBtn) {
   requestPairingBtn.addEventListener('click', async () => {
+    if (isWhatsAppReady) {
+      if (pairingFeedback) {
+        pairingFeedback.textContent = 'Pairing via phone number is disabled while WhatsApp is connected.';
+        pairingFeedback.style.color = '#b42318';
+      }
+      return;
+    }
+
     const phoneNumber = pairingPhoneInput ? pairingPhoneInput.value.trim() : '';
     if (!phoneNumber) {
       if (pairingFeedback) {
@@ -229,7 +409,7 @@ if (requestPairingBtn) {
         pairingFeedback.style.color = '#b42318';
       }
     } finally {
-      requestPairingBtn.disabled = false;
+      requestPairingBtn.disabled = isWhatsAppReady;
     }
   });
 }
@@ -348,6 +528,7 @@ if (navItems.length) {
   });
 
   showPageByHash(window.location.hash || DEFAULT_PAGE_HASH);
+  document.documentElement.classList.remove('has-route-hash');
   window.addEventListener('hashchange', () => {
     showPageByHash(window.location.hash || DEFAULT_PAGE_HASH);
   });
@@ -443,7 +624,21 @@ document.querySelectorAll('.btn-delete').forEach((button) => {
 
 const commandForm = document.getElementById('command-form');
 const commandFeedback = document.getElementById('command-feedback');
+const commandAdvancedFields = document.getElementById('command-advanced-fields');
 const commandTriggerInput = document.getElementById('commandTrigger');
+const commandMediaTypeInput = document.getElementById('commandMediaType');
+const commandCategoryInput = document.getElementById('commandCategory');
+const commandDescriptionInput = document.getElementById('commandDescription');
+const commandResponseInput = document.getElementById('commandResponse');
+const commandMediaSourceInput = document.getElementById('commandMediaSource');
+const commandMediaUrlInput = document.getElementById('commandMediaUrl');
+const commandMediaUploadInput = document.getElementById('commandMediaUpload');
+const commandMediaUploadHint = document.getElementById('commandMediaUploadHint');
+const commandFileNameInput = document.getElementById('commandFileName');
+const commandMediaSourceField = document.getElementById('commandMediaSourceField');
+const commandMediaUrlField = document.getElementById('commandMediaUrlField');
+const commandMediaUploadField = document.getElementById('commandMediaUploadField');
+const commandFileNameField = document.getElementById('commandFileNameField');
 const commandOriginalTrigger = document.getElementById('commandOriginalTrigger');
 const commandSubmitBtn = document.getElementById('commandSubmitBtn');
 const commandCancelBtn = document.getElementById('commandCancelBtn');
@@ -477,6 +672,7 @@ function buttonRowTemplate(button = {}) {
       <option value="quick_reply">Quick Reply</option>
       <option value="cta_url">Open Link</option>
       <option value="cta_call">Call</option>
+      <option value="cta_copy">Copy Code</option>
     </select>
     <input class="btn-label-input" placeholder="Button label" />
     <input class="btn-value-input" placeholder="Value (id / URL / phone)" />
@@ -490,13 +686,15 @@ function buttonRowTemplate(button = {}) {
 
   typeSelect.value = name;
   labelInput.value = params.display_text || '';
-  valueInput.value = params.id || params.url || params.phone_number || '';
+  valueInput.value = params.id || params.url || params.phone_number || params.copy_code || '';
 
   function syncPlaceholder() {
     if (typeSelect.value === 'cta_url') {
       valueInput.placeholder = 'https://example.com';
     } else if (typeSelect.value === 'cta_call') {
       valueInput.placeholder = '+60123456789';
+    } else if (typeSelect.value === 'cta_copy') {
+      valueInput.placeholder = 'DISKAUN10';
     } else {
       valueInput.placeholder = 'reply_id';
     }
@@ -531,6 +729,7 @@ function collectButtonsFromRows() {
       let params = { display_text: label };
       if (type === 'cta_url') params.url = value;
       else if (type === 'cta_call') params.phone_number = value;
+      else if (type === 'cta_copy') params.copy_code = value;
       else params.id = value;
 
       return { name: type, buttonParamsJson: JSON.stringify(params) };
@@ -548,6 +747,95 @@ function setCommandFeedback(message, color) {
   commandFeedback.style.color = color || '#5d645d';
 }
 
+function getNormalizedMediaType() {
+  if (!commandMediaTypeInput) return '';
+  const selected = String(commandMediaTypeInput.value || '').trim();
+  if (!selected || selected === 'none') return '';
+  return selected;
+}
+
+function isMediaTypeStepReady() {
+  if (!commandMediaTypeInput) return false;
+  return Boolean(String(commandMediaTypeInput.value || '').trim());
+}
+
+function updateCommandSubmitState() {
+  if (!commandSubmitBtn) return;
+
+  const trigger = String(commandTriggerInput?.value || '').trim();
+  const hasValidTrigger = Boolean(trigger) && trigger.startsWith('.');
+  const selectedMediaType = String(commandMediaTypeInput?.value || '').trim();
+  const hasMediaType = Boolean(selectedMediaType);
+  const isNoMedia = selectedMediaType === 'none';
+  const mediaSource = String(commandMediaSourceInput?.value || 'url');
+  const hasResponse = Boolean(String(commandResponseInput?.value || '').trim());
+  const hasMediaUrl = Boolean(String(commandMediaUrlInput?.value || '').trim());
+  const hasUploadFile = Boolean(commandMediaUploadInput?.files && commandMediaUploadInput.files.length);
+  const hasMediaInput = isNoMedia
+    ? false
+    : mediaSource === 'upload'
+      ? hasUploadFile || hasMediaUrl
+      : hasMediaUrl;
+  const isReady = hasValidTrigger && hasMediaType && (hasResponse || hasMediaInput);
+
+  commandSubmitBtn.disabled = !isReady;
+  commandSubmitBtn.classList.toggle('is-ready', isReady);
+}
+
+function updateCommandFormFlow() {
+  const selectedMediaType = String(commandMediaTypeInput?.value || '').trim();
+  const showAdvanced = Boolean(selectedMediaType);
+
+  if (commandAdvancedFields) {
+    commandAdvancedFields.hidden = !showAdvanced;
+  }
+
+  const isNoMedia = selectedMediaType === 'none';
+  const isDocument = selectedMediaType === 'document';
+  const mediaSource = String(commandMediaSourceInput?.value || 'url');
+  const showMediaUrl = showAdvanced && !isNoMedia;
+  const showFileName = showAdvanced && isDocument;
+  const showMediaSource = showAdvanced && !isNoMedia;
+  const useUpload = showMediaSource && mediaSource === 'upload';
+
+  if (commandMediaSourceField) {
+    commandMediaSourceField.hidden = !showMediaSource;
+  }
+  if (commandMediaUrlField) {
+    commandMediaUrlField.hidden = !showMediaUrl || useUpload;
+  }
+  if (commandMediaUrlInput) {
+    commandMediaUrlInput.required = showMediaUrl && !useUpload;
+    if (!showMediaUrl || useUpload) {
+      commandMediaUrlInput.value = '';
+    }
+  }
+
+  if (commandMediaUploadField) {
+    commandMediaUploadField.hidden = !showMediaUrl || !useUpload;
+  }
+  if (commandMediaUploadInput) {
+    commandMediaUploadInput.required = showMediaUrl && useUpload;
+    if (!showMediaUrl || !useUpload) {
+      commandMediaUploadInput.value = '';
+    }
+  }
+  if (commandMediaUploadHint) {
+    commandMediaUploadHint.textContent = useUpload
+      ? 'Choose a file to upload and use as media source.'
+      : 'Choose URL source or upload source for media.';
+  }
+
+  if (commandFileNameField) {
+    commandFileNameField.hidden = !showFileName;
+  }
+  if (commandFileNameInput && !showFileName) {
+    commandFileNameInput.value = '';
+  }
+
+  updateCommandSubmitState();
+}
+
 function resetCommandForm() {
   if (!commandForm) return;
   commandForm.reset();
@@ -556,18 +844,24 @@ function resetCommandForm() {
   if (commandTriggerInput) commandTriggerInput.disabled = false;
   if (commandSubmitBtn) commandSubmitBtn.textContent = 'Save Command';
   if (commandCancelBtn) commandCancelBtn.hidden = true;
+  if (commandMediaSourceInput) commandMediaSourceInput.value = 'url';
+  setCommandFeedback('');
+  updateCommandFormFlow();
 }
 
 function fillCommandForm(command) {
   if (!commandForm || !command) return;
 
-  commandForm.querySelector('#commandTrigger').value = command.trigger || '';
-  commandForm.querySelector('#commandCategory').value = command.category || 'General';
-  commandForm.querySelector('#commandDescription').value = command.description || '';
-  commandForm.querySelector('#commandResponse').value = command.response || '';
-  commandForm.querySelector('#commandMediaType').value = command.mediaType || '';
-  commandForm.querySelector('#commandMediaUrl').value = command.mediaUrl || '';
-  commandForm.querySelector('#commandFileName').value = command.fileName || '';
+  if (commandTriggerInput) commandTriggerInput.value = command.trigger || '';
+  if (commandCategoryInput) commandCategoryInput.value = command.category || 'General';
+  if (commandDescriptionInput) commandDescriptionInput.value = command.description || '';
+  if (commandResponseInput) commandResponseInput.value = command.response || '';
+  if (commandMediaTypeInput) commandMediaTypeInput.value = command.mediaType || 'none';
+  if (commandMediaSourceInput) {
+    commandMediaSourceInput.value = command.mediaUrl ? 'url' : 'upload';
+  }
+  if (commandMediaUrlInput) commandMediaUrlInput.value = command.mediaUrl || '';
+  if (commandFileNameInput) commandFileNameInput.value = command.fileName || '';
 
   clearButtonRows();
   (command.buttons || []).forEach((button) => addButtonRow(button));
@@ -576,6 +870,13 @@ function fillCommandForm(command) {
   if (commandTriggerInput) commandTriggerInput.disabled = true;
   if (commandSubmitBtn) commandSubmitBtn.textContent = 'Update Command';
   if (commandCancelBtn) commandCancelBtn.hidden = false;
+  updateCommandFormFlow();
+
+  setTabbedPanel(
+    'create',
+    { create: commandTabCreate, list: commandTabList },
+    { create: commandCreatePanel, list: commandListPanel }
+  );
 
   window.history.pushState(null, '', '#custom-commands');
   showPageByHash('#custom-commands');
@@ -586,6 +887,48 @@ if (commandCancelBtn) {
   commandCancelBtn.addEventListener('click', resetCommandForm);
 }
 
+if (commandTriggerInput) {
+  commandTriggerInput.addEventListener('input', updateCommandFormFlow);
+}
+
+if (commandMediaTypeInput) {
+  commandMediaTypeInput.addEventListener('change', updateCommandFormFlow);
+}
+
+if (commandMediaSourceInput) {
+  commandMediaSourceInput.addEventListener('change', updateCommandFormFlow);
+}
+
+if (commandResponseInput) {
+  commandResponseInput.addEventListener('input', updateCommandSubmitState);
+}
+
+if (commandMediaUrlInput) {
+  commandMediaUrlInput.addEventListener('input', updateCommandSubmitState);
+}
+
+if (commandMediaUploadInput) {
+  commandMediaUploadInput.addEventListener('change', updateCommandSubmitState);
+}
+
+async function uploadCommandMediaFile(file, mediaType) {
+  const formData = new FormData();
+  formData.set('mediaFile', file);
+  formData.set('mediaType', mediaType);
+
+  const response = await fetch('/api/custom-commands/upload-media', {
+    method: 'POST',
+    body: formData,
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.error || 'Failed to upload media file');
+  }
+
+  return data;
+}
+
 if (commandForm) {
   commandForm.addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -593,15 +936,32 @@ if (commandForm) {
     const formData = new FormData(commandForm);
     const originalTrigger = commandOriginalTrigger ? commandOriginalTrigger.value : '';
     const isEditing = Boolean(originalTrigger);
+    const selectedMediaType = String(formData.get('mediaType') || '').trim();
+    const selectedMediaSource = String(formData.get('mediaSource') || 'url').trim();
+
+    let mediaUrl = String(formData.get('mediaUrl') || '').trim();
+    let fileName = String(formData.get('fileName') || '').trim();
+
+    if (selectedMediaType && selectedMediaType !== 'none' && selectedMediaSource === 'upload') {
+      const selectedFile = commandMediaUploadInput?.files?.[0];
+      if (selectedFile) {
+        setCommandFeedback('Uploading media file...', '#5d645d');
+        const uploaded = await uploadCommandMediaFile(selectedFile, selectedMediaType);
+        mediaUrl = String(uploaded.mediaUrl || '').trim();
+        if (!fileName) {
+          fileName = String(uploaded.fileName || '').trim();
+        }
+      }
+    }
 
     const payload = {
       trigger: String(formData.get('trigger') || '').trim(),
       category: String(formData.get('category') || '').trim(),
       description: String(formData.get('description') || '').trim(),
       response: String(formData.get('response') || '').trim(),
-      mediaType: String(formData.get('mediaType') || '').trim(),
-      mediaUrl: String(formData.get('mediaUrl') || '').trim(),
-      fileName: String(formData.get('fileName') || '').trim(),
+      mediaType: getNormalizedMediaType(),
+      mediaUrl,
+      fileName,
       buttons: collectButtonsFromRows(),
     };
 
@@ -662,3 +1022,5 @@ document.querySelectorAll('.btn-delete-command').forEach((button) => {
     }
   });
 });
+
+updateCommandFormFlow();
