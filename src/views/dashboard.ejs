@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+    />
+    <title>ScheduleBot Dashboard</title>
+    <link rel="stylesheet" href="/public/styles.css" />
+  </head>
+  <body>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <div class="app" id="top">
+      <aside class="sidebar" id="sidebar">
+        <div class="side-label top">ScheduleBot</div>
+        <div class="brand-block">
+          <p class="eyebrow">WA SCHEDULER</p>
+          <h1>ScheduleBot</h1>
+          <p class="sidebar-copy">Control every WhatsApp schedule from one clean command center.</p>
+        </div>
+
+        <div class="side-label">Menu</div>
+        <nav class="sidebar-nav">
+          <a class="nav-item active" href="#status">Status</a>
+          <a class="nav-item" href="#create-schedule">Create</a>
+          <a class="nav-item" href="#schedule-list">Schedules</a>
+        </nav>
+
+        <div class="side-label">Stats</div>
+        <div class="sidebar-stats">
+          <div class="stat-chip">
+            <span>Total</span>
+            <strong><%= scheduleStats.total %></strong>
+          </div>
+          <div class="stat-chip">
+            <span>Pending</span>
+            <strong><%= scheduleStats.pending %></strong>
+          </div>
+          <div class="stat-chip">
+            <span>Sent</span>
+            <strong><%= scheduleStats.sent %></strong>
+          </div>
+          <div class="stat-chip">
+            <span>Failed</span>
+            <strong><%= scheduleStats.failed %></strong>
+          </div>
+        </div>
+
+        <div class="sidebar-status">
+          <div class="sidebar-status-row">
+            <span>WhatsApp</span>
+            <strong class="status-dot <%= waState.ready ? 'is-on' : 'is-off' %>">
+              <%= waState.ready ? 'Connected' : 'Offline' %>
+            </strong>
+          </div>
+          <p class="sidebar-status-text"><%= waState.status %></p>
+        </div>
+      </aside>
+
+      <main class="main">
+        <header class="top-nav">
+          <div class="top-nav-inner">
+            <button class="menu-btn" id="sidebarMenuBtn" type="button" aria-label="Open menu">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z"></path>
+              </svg>
+            </button>
+            <div class="top-nav-title-wrap">
+              <p class="top-nav-title">Dashboard</p>
+              <p class="top-nav-subtitle">WhatsApp Schedule Control</p>
+            </div>
+          </div>
+        </header>
+
+        <div class="container">
+          <header class="hero card">
+            <p class="eyebrow">Operations</p>
+            <h2>Monitor, schedule, and manage deliveries in one panel.</h2>
+            <p>
+              Real-time connection state, quick schedule creation, and complete job list in a single
+              workflow.
+            </p>
+          </header>
+
+          <section class="grid two-cols">
+          <article class="card status-card" id="status">
+            <h2>WhatsApp Status</h2>
+            <p id="wa-status" class="status <%= waState.ready ? 'status-ok' : 'status-warn' %>">
+              <%= waState.status %>
+            </p>
+
+            <div id="wa-qr-wrap" class="qr-wrap" <%= waState.qrCodeDataUrl ? '' : 'hidden' %>>
+              <% if (waState.qrCodeDataUrl) { %>
+              <img src="<%= waState.qrCodeDataUrl %>" alt="QR WhatsApp" class="qr" />
+              <% } else { %>
+              <img src="" alt="QR WhatsApp" class="qr" />
+              <% } %>
+              <p id="wa-qr-caption">Scan this QR code from WhatsApp to connect the bot.</p>
+            </div>
+            <p id="wa-qr-empty" class="muted" <%= waState.qrCodeDataUrl ? 'hidden' : '' %>>
+              QR will appear automatically when re-login is needed.
+            </p>
+
+            <ul class="tips muted">
+              <li>Personal: use a number like 62812xxxx</li>
+              <li>Group: use the group ID, with or without @g.us</li>
+            </ul>
+          </article>
+
+            <article class="card form-card" id="create-schedule">
+              <h2>Create Schedule</h2>
+            <form id="schedule-form">
+              <label for="targetType">Target Type</label>
+              <select id="targetType" name="targetType" required>
+                <option value="personal" selected>Personal Chat</option>
+                <option value="group">Group Chat</option>
+              </select>
+
+              <label for="targetValue" id="targetValueLabel">Destination Number (62812xxxx)</label>
+              <input id="targetValue" name="targetValue" required />
+              <p class="hint" id="targetHint">
+                Personal example: 6281234567890
+              </p>
+
+              <div class="group-tools" id="groupTools" hidden>
+                <div class="group-tools-head">
+                  <label for="groupPicker">Select Group From WhatsApp Account</label>
+                  <button type="button" class="btn-subtle" id="refreshGroupsBtn">Refresh Groups</button>
+                </div>
+                <select id="groupPicker">
+                  <option value="">Loading group list...</option>
+                </select>
+                <p class="hint" id="groupFetchHint">Pick a group to auto-fill the ID.</p>
+              </div>
+
+              <label for="message">Message</label>
+              <textarea id="message" name="message" rows="4" required></textarea>
+
+              <label for="scheduleAt">Send Time</label>
+              <input id="scheduleAt" name="scheduleAt" type="datetime-local" required />
+
+              <button type="submit">Save Schedule</button>
+            </form>
+              <p id="form-feedback" class="feedback"></p>
+            </article>
+          </section>
+
+          <section class="card table-card" id="schedule-list">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">Message Queue</p>
+                <h2>Schedule List</h2>
+              </div>
+              <p class="section-subtitle">Track every pending, sent, and failed job in one clean table.</p>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Type</th>
+                    <th>Target</th>
+                    <th>Message</th>
+                    <th>Time</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% if (!schedules.length) { %>
+                  <tr>
+                    <td colspan="7" class="muted">No schedules yet</td>
+                  </tr>
+                  <% } %>
+
+                  <% schedules.forEach((item) => { %>
+                  <tr>
+                    <td><%= item.id %></td>
+                    <td>
+                      <span class="pill pill-type">
+                        <%= item.targetType === 'group' ? 'group' : 'personal' %>
+                      </span>
+                    </td>
+                    <td><%= item.targetValue %></td>
+                    <td><%= item.message %></td>
+                    <td class="js-local-datetime" data-iso="<%= item.scheduleAt %>">
+                      <%= dayjs(item.scheduleAt).format('DD MMM YYYY HH:mm:ss') %>
+                    </td>
+                    <td>
+                      <span class="pill pill-<%= item.status %>"><%= item.status %></span>
+                    </td>
+                    <td>
+                      <button class="btn-delete" data-id="<%= item.id %>">Delete</button>
+                    </td>
+                  </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+      </main>
+          </div>
+
+    <script src="/public/app.js"></script>
+  </body>
+</html>
