@@ -198,17 +198,18 @@
                     <div class="field">
                       <label for="targetType">Target Type</label>
                       <select id="targetType" name="targetType" required>
-                        <option value="group" selected>Group Chat</option>
+                        <option value="personal" selected>Personal Chat</option>
+                        <option value="group">Group Chat</option>
                       </select>
                     </div>
 
                     <div class="field">
-                      <label for="targetValue" id="targetValueLabel">Group ID (example: 1203630xxxx@g.us)</label>
+                      <label for="targetValue" id="targetValueLabel">Destination Number (62812xxxx)</label>
                       <input id="targetValue" name="targetValue" required />
-                      <p class="hint" id="targetHint">You can enter 1203630xxxx only or with @g.us suffix</p>
+                      <p class="hint" id="targetHint">Personal example: 6281234567890</p>
                     </div>
 
-                    <div class="group-tools" id="groupTools">
+                    <div class="group-tools" id="groupTools" hidden>
                       <div class="group-tools-head">
                         <label for="groupPicker">Select Group From WhatsApp Account</label>
                         <button type="button" class="btn btn-outline btn-sm" id="refreshGroupsBtn">Refresh Groups</button>
@@ -270,7 +271,7 @@
                           <td><%= item.id %></td>
                           <td>
                             <span class="badge badge-outline">
-                              <%= item.targetType === 'group' ? 'group' : '-' %>
+                              <%= item.targetType === 'group' ? 'group' : 'personal' %>
                             </span>
                           </td>
                           <td><%= item.targetValue %></td>

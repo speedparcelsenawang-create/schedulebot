@@ -147,8 +147,8 @@ function createDashboardRouter(whatsappService) {
       });
     }
 
-    if (targetType !== 'group') {
-      return res.status(400).json({ error: 'targetType must be group' });
+    if (!['personal', 'group'].includes(targetType)) {
+      return res.status(400).json({ error: 'targetType must be personal or group' });
     }
 
     const parsed = parseClientLocalDateTime(scheduleAt, timezoneOffsetMinutes);

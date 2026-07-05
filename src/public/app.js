@@ -489,11 +489,18 @@ async function loadGroups(force = false) {
 
 function syncTargetInputContent() {
   if (!targetTypeInput || !targetValueLabel || !targetHint) return;
-  targetTypeInput.value = 'group';
-  targetValueLabel.textContent = 'Group ID (example: 1203630xxxx@g.us)';
-  targetHint.textContent = 'You can enter 1203630xxxx only or with @g.us suffix';
-  if (groupTools) groupTools.hidden = false;
-  loadGroups();
+
+  if (targetTypeInput.value === 'group') {
+    targetValueLabel.textContent = 'Group ID (example: 1203630xxxx@g.us)';
+    targetHint.textContent = 'You can enter 1203630xxxx only or with @g.us suffix';
+    if (groupTools) groupTools.hidden = false;
+    loadGroups();
+    return;
+  }
+
+  targetValueLabel.textContent = 'Destination Number (62812xxxx)';
+  targetHint.textContent = 'Personal example: 6281234567890';
+  if (groupTools) groupTools.hidden = true;
 }
 
 if (targetTypeInput) {
