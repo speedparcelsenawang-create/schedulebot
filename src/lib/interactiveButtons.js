@@ -1,4 +1,4 @@
-const baileys = require('@whiskeysockets/baileys');
+const baileys = require('atexovi-baileys');
 
 const { generateWAMessageFromContent, proto } = baileys;
 
@@ -86,6 +86,23 @@ async function sendInteractiveButtons(sock, jid, payload, options = {}) {
   }
 
   try {
+    await sock.sendMessage(
+      jid,
+      {
+        text: bodyText || ' ',
+        footer: footerText,
+        interactiveButtons: nativeButtons,
+        viewOnce: true,
+      },
+      options
+    );
+    return;
+  } catch (error) {
+    // Fallback for Baileys variants that do not support interactiveButtons in sendMessage.
+    console.warn('[WA] interactiveButtons via sendMessage failed:', error.message);
+  }
+
+  try {
     const msg = generateWAMessageFromContent(
       jid,
       {
@@ -114,6 +131,7 @@ async function sendInteractiveButtons(sock, jid, payload, options = {}) {
 
     await sock.relayMessage(jid, msg.message, { messageId: msg.key.id });
   } catch (error) {
+    console.warn('[WA] nativeFlow relay failed, trying legacy buttons:', error.message);
     const legacyButtons = toLegacyButtons(nativeButtons);
     if (!legacyButtons.length) throw error;
 

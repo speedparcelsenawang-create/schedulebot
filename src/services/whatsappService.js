@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const qrcode = require('qrcode');
 const pino = require('pino');
-const baileys = require('@whiskeysockets/baileys');
+const baileys = require('atexovi-baileys');
 
 const customCommandStore = require('./customCommandStore');
 const { sendInteractiveButtons } = require('../lib/interactiveButtons');
