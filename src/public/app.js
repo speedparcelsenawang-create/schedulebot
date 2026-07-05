@@ -24,11 +24,42 @@ const pairingCodeValue = document.getElementById('pairing-code-value');
 const sidebar = document.getElementById('sidebar');
 const sidebarOverlay = document.getElementById('sidebarOverlay');
 const sidebarMenuBtn = document.getElementById('sidebarMenuBtn');
+const themeToggleBtn = document.getElementById('themeToggleBtn');
 const navItems = Array.from(document.querySelectorAll('.sidebar-nav .nav-item'));
 const pages = Array.from(document.querySelectorAll('.page[data-page]'));
 const DEFAULT_PAGE_HASH = '#account';
+const THEME_STORAGE_KEY = 'schedulebot-theme';
 
 let hasLoadedGroups = false;
+
+function applyTheme(theme) {
+  const normalized = theme === 'light' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', normalized);
+  try {
+    window.localStorage.setItem(THEME_STORAGE_KEY, normalized);
+  } catch (error) {
+    /* ignore storage errors */
+  }
+}
+
+function initTheme() {
+  let storedTheme = null;
+  try {
+    storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
+  } catch (error) {
+    storedTheme = null;
+  }
+  applyTheme(storedTheme === 'light' ? 'light' : 'dark');
+}
+
+initTheme();
+
+if (themeToggleBtn) {
+  themeToggleBtn.addEventListener('click', () => {
+    const current = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+    applyTheme(current === 'light' ? 'dark' : 'light');
+  });
+}
 
 function openSidebar() {
   if (!sidebar || !sidebarOverlay) return;

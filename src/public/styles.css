@@ -22,6 +22,29 @@
   --danger-bg: rgba(239, 68, 68, 0.12);
 }
 
+[data-theme="light"] {
+  --background: #ffffff;
+  --foreground: #09090b;
+  --card: #ffffff;
+  --card-foreground: #09090b;
+  --surface: #f4f4f5;
+  --surface-2: #e4e4e7;
+  --muted: #f4f4f5;
+  --muted-foreground: #71717a;
+  --primary: #18181b;
+  --primary-foreground: #fafafa;
+  --border: #e4e4e7;
+  --input: #d4d4d8;
+  --ring: #18181b;
+
+  --success: #16a34a;
+  --success-bg: rgba(22, 163, 74, 0.1);
+  --warning: #b45309;
+  --warning-bg: rgba(180, 83, 9, 0.1);
+  --danger: #dc2626;
+  --danger-bg: rgba(220, 38, 38, 0.1);
+}
+
 * {
   box-sizing: border-box;
 }
@@ -226,8 +249,33 @@ button {
   background: var(--surface-2);
 }
 
+.top-nav-title-wrap {
+  flex: 1;
+  min-width: 0;
+}
+
 .top-nav-title-wrap p {
   margin: 0;
+}
+
+.theme-toggle-btn {
+  display: inline-flex;
+  margin-left: auto;
+}
+
+.theme-icon {
+  width: 17px;
+  height: 17px;
+  display: none;
+}
+
+[data-theme="dark"] .theme-icon-sun,
+:root:not([data-theme]) .theme-icon-sun {
+  display: block;
+}
+
+[data-theme="light"] .theme-icon-moon {
+  display: block;
 }
 
 .top-nav-title {
