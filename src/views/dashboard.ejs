@@ -14,39 +14,47 @@
 
     <div class="app" id="top">
       <aside class="sidebar" id="sidebar">
-        <div class="brand-block">
-          <span class="brand-dot"></span>
+        <div class="sidebar-header">
+          <span class="brand-mark">S</span>
           <span class="brand-name">ScheduleBot</span>
         </div>
 
-        <nav class="sidebar-nav">
-          <a class="nav-item active" href="#status">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <circle cx="12" cy="12" r="9"></circle>
-              <path d="M12 7v5l3 3"></path>
-            </svg>
-            <span>Status</span>
-          </a>
-          <a class="nav-item" href="#create-schedule">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M12 5v14M5 12h14"></path>
-            </svg>
-            <span>Create</span>
-          </a>
-          <a class="nav-item" href="#schedule-list">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <rect x="3" y="4" width="18" height="18" rx="2"></rect>
-              <path d="M3 10h18M8 2v4M16 2v4"></path>
-            </svg>
-            <span>Schedules</span>
-          </a>
-        </nav>
+        <div class="sidebar-body">
+          <p class="nav-group-label">Menu</p>
+          <nav class="sidebar-nav">
+            <a class="nav-item active" href="#status">
+              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="9"></circle>
+                <path d="M12 7v5l3 3"></path>
+              </svg>
+              <span>Status</span>
+            </a>
+            <a class="nav-item" href="#create-schedule">
+              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 5v14M5 12h14"></path>
+              </svg>
+              <span>Create</span>
+            </a>
+            <a class="nav-item" href="#schedule-list">
+              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="4" width="18" height="18" rx="2"></rect>
+                <path d="M3 10h18M8 2v4M16 2v4"></path>
+              </svg>
+              <span>Schedules</span>
+            </a>
+          </nav>
+        </div>
+
+        <div class="sidebar-footer">
+          <span class="status-indicator <%= waState.ready ? 'is-on' : 'is-off' %>"></span>
+          <span class="sidebar-footer-text">WhatsApp <%= waState.ready ? 'connected' : 'offline' %></span>
+        </div>
       </aside>
 
       <main class="main">
         <header class="top-nav">
           <div class="top-nav-inner">
-            <button class="menu-btn" id="sidebarMenuBtn" type="button" aria-label="Open menu">
+            <button class="icon-btn" id="sidebarMenuBtn" type="button" aria-label="Open menu">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <rect x="3" y="4" width="18" height="16" rx="2"></rect>
                 <path d="M9.5 4v16"></path>
@@ -60,152 +68,163 @@
         </header>
 
         <div class="container">
-          <section class="overview">
-            <div class="overview-stats">
-              <div class="stat-chip">
-                <span>Total</span>
-                <strong><%= scheduleStats.total %></strong>
-              </div>
-              <div class="stat-chip">
-                <span>Pending</span>
-                <strong><%= scheduleStats.pending %></strong>
-              </div>
-              <div class="stat-chip">
-                <span>Sent</span>
-                <strong><%= scheduleStats.sent %></strong>
-              </div>
-              <div class="stat-chip">
-                <span>Failed</span>
-                <strong><%= scheduleStats.failed %></strong>
-              </div>
+          <section class="stats-grid">
+            <div class="stat-card">
+              <p class="stat-label">Total</p>
+              <p class="stat-value"><%= scheduleStats.total %></p>
             </div>
-            <div class="overview-status">
-              <span>WhatsApp</span>
-              <strong class="status-dot <%= waState.ready ? 'is-on' : 'is-off' %>">
-                <%= waState.ready ? 'Connected' : 'Offline' %>
-              </strong>
+            <div class="stat-card">
+              <p class="stat-label">Pending</p>
+              <p class="stat-value"><%= scheduleStats.pending %></p>
+            </div>
+            <div class="stat-card">
+              <p class="stat-label">Sent</p>
+              <p class="stat-value"><%= scheduleStats.sent %></p>
+            </div>
+            <div class="stat-card">
+              <p class="stat-label">Failed</p>
+              <p class="stat-value"><%= scheduleStats.failed %></p>
             </div>
           </section>
 
           <section class="grid two-cols">
-          <article class="card status-card" id="status">
-            <h2>WhatsApp Status</h2>
-            <p id="wa-status" class="status <%= waState.ready ? 'status-ok' : 'status-warn' %>">
-              <%= waState.status %>
-            </p>
-
-            <div id="wa-qr-wrap" class="qr-wrap" <%= waState.qrCodeDataUrl ? '' : 'hidden' %>>
-              <% if (waState.qrCodeDataUrl) { %>
-              <img src="<%= waState.qrCodeDataUrl %>" alt="QR WhatsApp" class="qr" />
-              <% } else { %>
-              <img src="" alt="QR WhatsApp" class="qr" />
-              <% } %>
-              <p id="wa-qr-caption">Scan this QR code from WhatsApp to connect the bot.</p>
-            </div>
-            <p id="wa-qr-empty" class="muted" <%= waState.qrCodeDataUrl ? 'hidden' : '' %>>
-              QR will appear automatically when re-login is needed.
-            </p>
-
-            <ul class="tips muted">
-              <li>Personal: use a number like 62812xxxx</li>
-              <li>Group: use the group ID, with or without @g.us</li>
-            </ul>
-          </article>
-
-            <article class="card form-card" id="create-schedule">
-              <h2>Create Schedule</h2>
-            <form id="schedule-form">
-              <label for="targetType">Target Type</label>
-              <select id="targetType" name="targetType" required>
-                <option value="personal" selected>Personal Chat</option>
-                <option value="group">Group Chat</option>
-              </select>
-
-              <label for="targetValue" id="targetValueLabel">Destination Number (62812xxxx)</label>
-              <input id="targetValue" name="targetValue" required />
-              <p class="hint" id="targetHint">
-                Personal example: 6281234567890
-              </p>
-
-              <div class="group-tools" id="groupTools" hidden>
-                <div class="group-tools-head">
-                  <label for="groupPicker">Select Group From WhatsApp Account</label>
-                  <button type="button" class="btn-subtle" id="refreshGroupsBtn">Refresh Groups</button>
-                </div>
-                <select id="groupPicker">
-                  <option value="">Loading group list...</option>
-                </select>
-                <p class="hint" id="groupFetchHint">Pick a group to auto-fill the ID.</p>
+            <article class="card" id="status">
+              <div class="card-header">
+                <h2 class="card-title">WhatsApp Status</h2>
+                <p class="card-description">Connection state and QR pairing</p>
               </div>
+              <div class="card-content">
+                <div class="status-row">
+                  <span class="badge <%= waState.ready ? 'badge-success' : 'badge-warning' %>" id="wa-status">
+                    <%= waState.status %>
+                  </span>
+                </div>
 
-              <label for="message">Message</label>
-              <textarea id="message" name="message" rows="4" required></textarea>
+                <div id="wa-qr-wrap" class="qr-wrap" <%= waState.qrCodeDataUrl ? '' : 'hidden' %>>
+                  <% if (waState.qrCodeDataUrl) { %>
+                  <img src="<%= waState.qrCodeDataUrl %>" alt="QR WhatsApp" class="qr" />
+                  <% } else { %>
+                  <img src="" alt="QR WhatsApp" class="qr" />
+                  <% } %>
+                  <p id="wa-qr-caption" class="qr-caption">Scan this QR code from WhatsApp to connect the bot.</p>
+                </div>
+                <p id="wa-qr-empty" class="muted" <%= waState.qrCodeDataUrl ? 'hidden' : '' %>>
+                  QR will appear automatically when re-login is needed.
+                </p>
 
-              <label for="scheduleAt">Send Time</label>
-              <input id="scheduleAt" name="scheduleAt" type="datetime-local" required />
+                <ul class="tips muted">
+                  <li>Personal: use a number like 62812xxxx</li>
+                  <li>Group: use the group ID, with or without @g.us</li>
+                </ul>
+              </div>
+            </article>
 
-              <button type="submit">Save Schedule</button>
-            </form>
-              <p id="form-feedback" class="feedback"></p>
+            <article class="card" id="create-schedule">
+              <div class="card-header">
+                <h2 class="card-title">Create Schedule</h2>
+                <p class="card-description">Queue a new WhatsApp message</p>
+              </div>
+              <div class="card-content">
+                <form id="schedule-form">
+                  <div class="field">
+                    <label for="targetType">Target Type</label>
+                    <select id="targetType" name="targetType" required>
+                      <option value="personal" selected>Personal Chat</option>
+                      <option value="group">Group Chat</option>
+                    </select>
+                  </div>
+
+                  <div class="field">
+                    <label for="targetValue" id="targetValueLabel">Destination Number (62812xxxx)</label>
+                    <input id="targetValue" name="targetValue" required />
+                    <p class="hint" id="targetHint">Personal example: 6281234567890</p>
+                  </div>
+
+                  <div class="group-tools" id="groupTools" hidden>
+                    <div class="group-tools-head">
+                      <label for="groupPicker">Select Group From WhatsApp Account</label>
+                      <button type="button" class="btn btn-outline btn-sm" id="refreshGroupsBtn">Refresh Groups</button>
+                    </div>
+                    <select id="groupPicker">
+                      <option value="">Loading group list...</option>
+                    </select>
+                    <p class="hint" id="groupFetchHint">Pick a group to auto-fill the ID.</p>
+                  </div>
+
+                  <div class="field">
+                    <label for="message">Message</label>
+                    <textarea id="message" name="message" rows="4" required></textarea>
+                  </div>
+
+                  <div class="field">
+                    <label for="scheduleAt">Send Time</label>
+                    <input id="scheduleAt" name="scheduleAt" type="datetime-local" required />
+                  </div>
+
+                  <button type="submit" class="btn btn-primary btn-block">Save Schedule</button>
+                </form>
+                <p id="form-feedback" class="feedback"></p>
+              </div>
             </article>
           </section>
 
           <section class="card table-card" id="schedule-list">
-            <div class="section-head">
+            <div class="card-header section-head">
               <div>
-                <p class="eyebrow">Message Queue</p>
-                <h2>Schedule List</h2>
+                <h2 class="card-title">Schedule List</h2>
+                <p class="card-description">Track every pending, sent, and failed job in one clean table.</p>
               </div>
-              <p class="section-subtitle">Track every pending, sent, and failed job in one clean table.</p>
             </div>
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Type</th>
-                    <th>Target</th>
-                    <th>Message</th>
-                    <th>Time</th>
-                    <th>Status</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <% if (!schedules.length) { %>
-                  <tr>
-                    <td colspan="7" class="muted">No schedules yet</td>
-                  </tr>
-                  <% } %>
+            <div class="card-content no-pad">
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Type</th>
+                      <th>Target</th>
+                      <th>Message</th>
+                      <th>Time</th>
+                      <th>Status</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <% if (!schedules.length) { %>
+                    <tr>
+                      <td colspan="7" class="muted">No schedules yet</td>
+                    </tr>
+                    <% } %>
 
-                  <% schedules.forEach((item) => { %>
-                  <tr>
-                    <td><%= item.id %></td>
-                    <td>
-                      <span class="pill pill-type">
-                        <%= item.targetType === 'group' ? 'group' : 'personal' %>
-                      </span>
-                    </td>
-                    <td><%= item.targetValue %></td>
-                    <td><%= item.message %></td>
-                    <td class="js-local-datetime" data-iso="<%= item.scheduleAt %>">
-                      <%= dayjs(item.scheduleAt).format('DD MMM YYYY HH:mm:ss') %>
-                    </td>
-                    <td>
-                      <span class="pill pill-<%= item.status %>"><%= item.status %></span>
-                    </td>
-                    <td>
-                      <button class="btn-delete" data-id="<%= item.id %>">Delete</button>
-                    </td>
-                  </tr>
-                  <% }) %>
-                </tbody>
-              </table>
+                    <% schedules.forEach((item) => { %>
+                    <tr>
+                      <td><%= item.id %></td>
+                      <td>
+                        <span class="badge badge-outline">
+                          <%= item.targetType === 'group' ? 'group' : 'personal' %>
+                        </span>
+                      </td>
+                      <td><%= item.targetValue %></td>
+                      <td class="cell-message"><%= item.message %></td>
+                      <td class="js-local-datetime" data-iso="<%= item.scheduleAt %>">
+                        <%= dayjs(item.scheduleAt).format('DD MMM YYYY HH:mm:ss') %>
+                      </td>
+                      <td>
+                        <span class="badge badge-<%= item.status %>"><%= item.status %></span>
+                      </td>
+                      <td class="cell-action">
+                        <button class="btn btn-ghost btn-sm btn-delete" data-id="<%= item.id %>">Delete</button>
+                      </td>
+                    </tr>
+                    <% }) %>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </section>
         </div>
       </main>
-          </div>
+    </div>
 
     <script src="/public/app.js"></script>
   </body>
