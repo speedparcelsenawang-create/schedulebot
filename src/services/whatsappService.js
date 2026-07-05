@@ -8,7 +8,12 @@ const customCommandStore = require('./customCommandStore');
 const { sendInteractiveButtons } = require('../lib/interactiveButtons');
 
 const makeWASocket = baileys.default;
-const { DisconnectReason, useMultiFileAuthState, fetchLatestBaileysVersion } = baileys;
+const {
+  DisconnectReason,
+  useMultiFileAuthState,
+  fetchLatestBaileysVersion,
+  makeCacheableSignalKeyStore,
+} = baileys;
 
 class WhatsAppService {
   constructor() {
@@ -59,9 +64,14 @@ class WhatsAppService {
       console.warn('[WA] Failed to fetch latest WA version, using fallback');
     }
 
+    const socketLogger = pino({ level: 'silent' });
+
     this.sock = makeWASocket({
-      auth: state,
-      logger: pino({ level: 'silent' }),
+      auth: {
+        creds: state.creds,
+        keys: makeCacheableSignalKeyStore(state.keys, socketLogger),
+      },
+      logger: socketLogger,
       browser: ['ScheduleBot', 'Desktop', '1.0.0'],
       printQRInTerminal: false,
       connectTimeoutMs: Number(process.env.WA_CONNECT_TIMEOUT_MS || 60000),

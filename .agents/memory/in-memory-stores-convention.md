@@ -1,17 +1,17 @@
 ---
-name: In-memory data store convention (ScheduleBot project)
-description: Why schedules and custom commands are kept in-memory rather than persisted to disk/DB.
+name: In-memory vs persisted data store convention (ScheduleBot project)
+description: Which feature stores are in-memory-only vs JSON-file-persisted, and why.
 ---
 
-This project's feature stores (scheduled messages, custom auto-reply commands) are plain
-in-memory arrays inside service modules, not backed by a database or JSON file on disk.
+`customCommandStore.js` persists to `.data/custom-commands.json` (load on startup, write on
+create/update/delete). `scheduleStore.js` remains a plain in-memory array (not yet persisted, by
+user's explicit choice).
 
-**Why:** The original schedule store was already in-memory-only, and WhatsApp auth/session
-state itself resets on redeploys in this setup, so file-based persistence for secondary data
-added complexity without a durability guarantee to match. Kept the custom-command store
-consistent with that existing convention instead of introducing a new persistence layer.
+**Why:** Workflow restarts (common during CSS/UI iteration) wiped custom commands entirely,
+which surfaced as "bot tak respond" bug reports — commands the user created earlier were gone
+because nothing wrote them to disk. Custom commands were switched to file-based persistence to
+fix that. Schedules were left in-memory because the user declined that follow-up fix when asked.
 
-**How to apply:** When adding new bot features that need simple CRUD state, default to an
-in-memory module (same shape as `scheduleStore.js` / `customCommandStore.js`) unless the user
-asks explicitly for persistence across restarts — in that case, add a real DB via the database
-skill rather than ad-hoc JSON file writes.
+**How to apply:** When adding new bot features with CRUD state, ask whether restart-durability
+matters before defaulting to in-memory; if the user wants it to survive restarts, use a simple
+JSON file (same pattern as `customCommandStore.js`) rather than assuming in-memory is fine.
