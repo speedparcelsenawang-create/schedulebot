@@ -14,49 +14,16 @@
 
     <div class="app" id="top">
       <aside class="sidebar" id="sidebar">
-        <div class="side-label top">ScheduleBot</div>
         <div class="brand-block">
-          <p class="eyebrow">WA SCHEDULER</p>
-          <h1>ScheduleBot</h1>
-          <p class="sidebar-copy">Control every WhatsApp schedule from one clean command center.</p>
+          <span class="brand-dot"></span>
+          <span class="brand-name">ScheduleBot</span>
         </div>
 
-        <div class="side-label">Menu</div>
         <nav class="sidebar-nav">
           <a class="nav-item active" href="#status">Status</a>
           <a class="nav-item" href="#create-schedule">Create</a>
           <a class="nav-item" href="#schedule-list">Schedules</a>
         </nav>
-
-        <div class="side-label">Stats</div>
-        <div class="sidebar-stats">
-          <div class="stat-chip">
-            <span>Total</span>
-            <strong><%= scheduleStats.total %></strong>
-          </div>
-          <div class="stat-chip">
-            <span>Pending</span>
-            <strong><%= scheduleStats.pending %></strong>
-          </div>
-          <div class="stat-chip">
-            <span>Sent</span>
-            <strong><%= scheduleStats.sent %></strong>
-          </div>
-          <div class="stat-chip">
-            <span>Failed</span>
-            <strong><%= scheduleStats.failed %></strong>
-          </div>
-        </div>
-
-        <div class="sidebar-status">
-          <div class="sidebar-status-row">
-            <span>WhatsApp</span>
-            <strong class="status-dot <%= waState.ready ? 'is-on' : 'is-off' %>">
-              <%= waState.ready ? 'Connected' : 'Offline' %>
-            </strong>
-          </div>
-          <p class="sidebar-status-text"><%= waState.status %></p>
-        </div>
       </aside>
 
       <main class="main">
@@ -75,14 +42,32 @@
         </header>
 
         <div class="container">
-          <header class="hero card">
-            <p class="eyebrow">Operations</p>
-            <h2>Monitor, schedule, and manage deliveries in one panel.</h2>
-            <p>
-              Real-time connection state, quick schedule creation, and complete job list in a single
-              workflow.
-            </p>
-          </header>
+          <section class="overview">
+            <div class="overview-stats">
+              <div class="stat-chip">
+                <span>Total</span>
+                <strong><%= scheduleStats.total %></strong>
+              </div>
+              <div class="stat-chip">
+                <span>Pending</span>
+                <strong><%= scheduleStats.pending %></strong>
+              </div>
+              <div class="stat-chip">
+                <span>Sent</span>
+                <strong><%= scheduleStats.sent %></strong>
+              </div>
+              <div class="stat-chip">
+                <span>Failed</span>
+                <strong><%= scheduleStats.failed %></strong>
+              </div>
+            </div>
+            <div class="overview-status">
+              <span>WhatsApp</span>
+              <strong class="status-dot <%= waState.ready ? 'is-on' : 'is-off' %>">
+                <%= waState.ready ? 'Connected' : 'Offline' %>
+              </strong>
+            </div>
+          </section>
 
           <section class="grid two-cols">
           <article class="card status-card" id="status">

@@ -50,142 +50,108 @@ a {
   top: 0;
   left: 0;
   height: 100dvh;
-  padding: 14px 12px;
-  background: linear-gradient(165deg, rgba(24, 24, 27, 0.98), rgba(9, 9, 11, 0.95));
-  border-right: 1px solid rgba(63, 63, 70, 0.92);
+  padding: 20px 14px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
   overflow-y: auto;
   z-index: 300;
   transform: translateX(0);
   transition: transform 0.25s ease;
 }
 
-.sidebar::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, var(--green), var(--blue));
-}
-
-.side-label {
-  position: relative;
-  font-size: 10px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-dim);
-  font-weight: 700;
-  margin: 4px 0 8px;
-  padding: 0 2px;
-}
-
-.side-label::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 98px;
-  right: 0;
-  height: 1px;
-  background: rgba(82, 82, 91, 0.55);
-}
-
 .brand-block {
-  margin-bottom: 12px;
-  padding: 14px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: rgba(39, 39, 42, 0.6);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 6px;
+  margin-bottom: 28px;
 }
 
-.brand-block h1 {
-  margin: 8px 0;
-  font-size: 1.55rem;
-  letter-spacing: -0.03em;
+.brand-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--green), var(--blue));
+  flex-shrink: 0;
 }
 
-.sidebar-copy {
-  margin: 0;
-  color: var(--text-dim);
-  line-height: 1.45;
+.brand-name {
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
 }
 
 .sidebar-nav {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  margin-bottom: 12px;
+  gap: 2px;
 }
 
 .nav-item {
   display: block;
   text-decoration: none;
-  border: 1px solid transparent;
-  border-radius: 10px;
-  padding: 9px 11px;
+  border-radius: 8px;
+  padding: 10px 12px;
   color: var(--text-dim);
-  font-weight: 600;
+  font-weight: 500;
   transition: 0.15s ease;
 }
 
 .nav-item:hover {
   color: var(--text);
-  background: rgba(39, 39, 42, 0.92);
-  border-color: rgba(34, 197, 94, 0.26);
-  transform: translateX(2px);
+  background: rgba(39, 39, 42, 0.9);
 }
 
 .nav-item.active {
   color: var(--text);
-  border-color: rgba(34, 197, 94, 0.45);
-  background: linear-gradient(90deg, rgba(34, 197, 94, 0.24), rgba(59, 130, 246, 0.18));
+  background: rgba(34, 197, 94, 0.14);
+  font-weight: 600;
 }
 
-.sidebar-stats {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+.overview {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.overview-stats {
+  display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
 .stat-chip {
   border: 1px solid var(--border);
   border-radius: 10px;
-  background: rgba(39, 39, 42, 0.7);
-  padding: 10px;
+  background: var(--surface);
+  padding: 8px 14px;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
 }
 
 .stat-chip span {
-  display: block;
   font-size: 11px;
   color: var(--text-dim);
 }
 
 .stat-chip strong {
-  display: block;
-  margin-top: 4px;
-  font-size: 1.2rem;
+  font-size: 1rem;
 }
 
-.sidebar-status {
-  margin-top: 12px;
+.overview-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   border: 1px solid var(--border);
   border-radius: 10px;
-  padding: 10px;
-  background: rgba(39, 39, 42, 0.82);
-}
-
-.sidebar-status-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
+  background: var(--surface);
+  padding: 8px 14px;
   font-size: 12px;
-  font-weight: 700;
-}
-
-.sidebar-status-text {
-  margin: 7px 0 0;
-  font-size: 12px;
-  color: var(--text-dim);
+  font-weight: 600;
 }
 
 .status-dot.is-on {
@@ -273,22 +239,6 @@ a {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 20px;
-}
-
-.hero {
-  background:
-    linear-gradient(130deg, rgba(34, 197, 94, 0.2), rgba(24, 24, 27, 0.95) 45%, rgba(59, 130, 246, 0.2));
-  animation: fade-slide 450ms ease-out;
-}
-
-.hero h2 {
-  margin: 7px 0 10px;
-  font-size: clamp(1.25rem, 3vw, 1.8rem);
-}
-
-.hero p {
-  margin: 0;
-  color: var(--text-dim);
 }
 
 .eyebrow {
