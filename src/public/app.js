@@ -47,17 +47,12 @@ const breadcrumbSectionSep = document.getElementById('breadcrumbSectionSep');
 const breadcrumbSection = document.getElementById('breadcrumbSection');
 const navItems = Array.from(document.querySelectorAll('.sidebar-nav .nav-item'));
 const pages = Array.from(document.querySelectorAll('.page[data-page]'));
-const globalLoadingBar = document.getElementById('globalLoadingBar');
 const DEFAULT_PAGE_HASH = '#account';
 const THEME_STORAGE_KEY = 'schedulebot-theme';
-const PANEL_TRANSITION_MS = 180;
-const LOADING_BAR_DELAY_MS = 90;
 
 let hasLoadedGroups = false;
 let hasLoadedPersonalChats = false;
 let isWhatsAppReady = false;
-let networkRequestsInFlight = 0;
-let loadingBarDelayTimer = null;
 
 const PAGE_TITLE_MAP = {
   account: 'Account',
@@ -69,102 +64,6 @@ const PAGE_TITLE_MAP = {
 function getActivePageKey() {
   const activePage = pages.find((page) => !page.hidden);
   return activePage ? String(activePage.getAttribute('data-page') || '') : '';
-}
-
-function animatePanelEntry(panel) {
-  if (!panel || panel.hidden) return;
-
-  panel.classList.remove('is-entering');
-  window.requestAnimationFrame(() => {
-    panel.classList.add('is-entering');
-    window.setTimeout(() => {
-      panel.classList.remove('is-entering');
-    }, PANEL_TRANSITION_MS);
-  });
-}
-
-function setButtonBusy(button, isBusy, busyText) {
-  if (!button) return;
-
-  if (isBusy) {
-    if (!button.dataset.originalText) {
-      button.dataset.originalText = button.textContent || '';
-    }
-    if (busyText) {
-      button.textContent = busyText;
-    }
-    button.disabled = true;
-    button.classList.add('is-loading');
-    button.setAttribute('aria-busy', 'true');
-    return;
-  }
-
-  if (button.dataset.originalText) {
-    button.textContent = button.dataset.originalText;
-    delete button.dataset.originalText;
-  }
-  button.classList.remove('is-loading');
-  button.removeAttribute('aria-busy');
-}
-
-function showGlobalLoadingBar() {
-  if (!globalLoadingBar) return;
-  globalLoadingBar.hidden = false;
-  globalLoadingBar.classList.add('active');
-}
-
-function hideGlobalLoadingBar() {
-  if (!globalLoadingBar) return;
-  globalLoadingBar.classList.remove('active');
-  window.setTimeout(() => {
-    if (!globalLoadingBar.classList.contains('active')) {
-      globalLoadingBar.hidden = true;
-    }
-  }, 120);
-}
-
-function trackNetworkStart() {
-  networkRequestsInFlight += 1;
-  if (networkRequestsInFlight !== 1) return;
-
-  loadingBarDelayTimer = window.setTimeout(() => {
-    showGlobalLoadingBar();
-  }, LOADING_BAR_DELAY_MS);
-}
-
-function trackNetworkEnd() {
-  networkRequestsInFlight = Math.max(0, networkRequestsInFlight - 1);
-  if (networkRequestsInFlight > 0) return;
-
-  if (loadingBarDelayTimer) {
-    window.clearTimeout(loadingBarDelayTimer);
-    loadingBarDelayTimer = null;
-  }
-  hideGlobalLoadingBar();
-}
-
-function initGlobalFetchLoadingIndicator() {
-  if (typeof window.fetch !== 'function' || window.fetch.__schedulebotTracked) return;
-
-  const nativeFetch = window.fetch.bind(window);
-  const trackedFetch = async (...args) => {
-    trackNetworkStart();
-    try {
-      return await nativeFetch(...args);
-    } finally {
-      trackNetworkEnd();
-    }
-  };
-
-  trackedFetch.__schedulebotTracked = true;
-  trackedFetch.__nativeFetch = nativeFetch;
-  window.fetch = trackedFetch;
-}
-
-function finishInitialBoot() {
-  window.requestAnimationFrame(() => {
-    document.body.classList.remove('app-booting');
-  });
 }
 
 function getActiveAccountSectionLabel() {
@@ -224,7 +123,6 @@ function initTheme() {
 }
 
 initTheme();
-initGlobalFetchLoadingIndicator();
 
 if (themeToggleBtn) {
   themeToggleBtn.addEventListener('click', () => {
@@ -264,8 +162,6 @@ function showPageByHash(hash) {
   pages.forEach((page) => {
     page.hidden = page !== pageToShow;
   });
-
-  animatePanelEntry(pageToShow);
 
   setActiveNavItemByHash(`#${pageToShow.getAttribute('data-page')}`);
   updateTopBreadcrumb();
@@ -384,7 +280,6 @@ function setActiveConnectionMethod(method) {
   methodTabPhone.classList.toggle('active', isPhone);
   qrMethodPanel.hidden = isPhone;
   phoneMethodPanel.hidden = !isPhone;
-  animatePanelEntry(isPhone ? phoneMethodPanel : qrMethodPanel);
   updateTopBreadcrumb();
 }
 
@@ -404,7 +299,6 @@ function setTabbedPanel(activeTabKey, tabs, panels) {
 
   panels.create.hidden = isList;
   panels.list.hidden = !isList;
-  animatePanelEntry(isList ? panels.list : panels.create);
   updateTopBreadcrumb();
 }
 
@@ -489,7 +383,7 @@ if (requestPairingBtn) {
       return;
     }
 
-    setButtonBusy(requestPairingBtn, true, 'Requesting...');
+    requestPairingBtn.disabled = true;
     if (pairingFeedback) {
       pairingFeedback.textContent = 'Requesting pairing code...';
       pairingFeedback.style.color = '#5d645d';
@@ -522,7 +416,6 @@ if (requestPairingBtn) {
         pairingFeedback.style.color = '#b42318';
       }
     } finally {
-      setButtonBusy(requestPairingBtn, false);
       requestPairingBtn.disabled = isWhatsAppReady;
     }
   });
@@ -595,7 +488,7 @@ async function loadPersonalChats(force = false) {
   if (hasLoadedPersonalChats && !force) return;
 
   personalChatPicker.disabled = true;
-  setButtonBusy(refreshPersonalChatsBtn, true, 'Refreshing...');
+  if (refreshPersonalChatsBtn) refreshPersonalChatsBtn.disabled = true;
   setPersonalChatHint('Fetching personal chat list...', '#5d645d');
 
   try {
@@ -620,7 +513,6 @@ async function loadPersonalChats(force = false) {
     setPersonalChatHint(error.message, '#b42318');
   } finally {
     personalChatPicker.disabled = false;
-    setButtonBusy(refreshPersonalChatsBtn, false);
     if (refreshPersonalChatsBtn) refreshPersonalChatsBtn.disabled = false;
   }
 }
@@ -630,7 +522,7 @@ async function loadGroups(force = false) {
   if (hasLoadedGroups && !force) return;
 
   groupPicker.disabled = true;
-  setButtonBusy(refreshGroupsBtn, true, 'Refreshing...');
+  if (refreshGroupsBtn) refreshGroupsBtn.disabled = true;
   setGroupHint('Fetching group list...', '#5d645d');
 
   try {
@@ -655,7 +547,6 @@ async function loadGroups(force = false) {
     setGroupHint(error.message, '#b42318');
   } finally {
     groupPicker.disabled = false;
-    setButtonBusy(refreshGroupsBtn, false);
     if (refreshGroupsBtn) refreshGroupsBtn.disabled = false;
   }
 }
@@ -789,11 +680,8 @@ if (form) {
       return;
     }
 
-    const scheduleSubmitBtn = form.querySelector('button[type="submit"]');
-
     feedback.textContent = 'Saving schedule...';
     feedback.style.color = '#5d645d';
-    setButtonBusy(scheduleSubmitBtn, true, 'Saving...');
 
     try {
       const response = await fetch('/api/schedules', {
@@ -811,12 +699,10 @@ if (form) {
       feedback.style.color = '#136f63';
       form.reset();
       syncTargetInputContent();
-      setTimeout(() => window.location.reload(), 120);
+      setTimeout(() => window.location.reload(), 350);
     } catch (error) {
       feedback.textContent = error.message;
       feedback.style.color = '#b42318';
-    } finally {
-      setButtonBusy(scheduleSubmitBtn, false);
     }
   });
 }
@@ -1188,7 +1074,6 @@ if (commandForm) {
     };
 
     setCommandFeedback(isEditing ? 'Updating command...' : 'Saving command...', '#5d645d');
-    setButtonBusy(commandSubmitBtn, true, isEditing ? 'Updating...' : 'Saving...');
 
     try {
       const url = isEditing
@@ -1208,12 +1093,9 @@ if (commandForm) {
       }
 
       setCommandFeedback(isEditing ? 'Command updated' : 'Command saved', '#136f63');
-      setTimeout(() => window.location.reload(), 120);
+      setTimeout(() => window.location.reload(), 350);
     } catch (error) {
       setCommandFeedback(error.message, '#b42318');
-    } finally {
-      setButtonBusy(commandSubmitBtn, false);
-      updateCommandSubmitState();
     }
   });
 }
@@ -1508,4 +1390,3 @@ if (clearDeletedMessagesBtn) {
 }
 
 updateCommandFormFlow();
-finishInitialBoot();
