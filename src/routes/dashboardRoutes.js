@@ -143,7 +143,8 @@ function createDashboardRouter(whatsappService) {
 
   router.post('/api/schedules', (req, res) => {
     const { targetType, targetValue, message, scheduleAt, timezoneOffsetMinutes } = req.body;
-    const normalizedTargetType = targetType === 'personal-manual' ? 'personal' : targetType;
+    const normalizedTargetType =
+      targetType === 'personal-manual' || targetType === 'personal-chat' ? 'personal' : targetType;
 
     if (!normalizedTargetType || !targetValue || !message || !scheduleAt) {
       return res.status(400).json({

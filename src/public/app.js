@@ -658,7 +658,8 @@ if (form) {
     const selectedType = String(formData.get('targetType') || '').trim();
     const selectedPersonalChatId = String(personalChatPicker?.value || '').trim();
     const targetValueRaw = String(formData.get('targetValue') || '').trim();
-    const normalizedTargetType = selectedType === 'personal-manual' ? 'personal' : selectedType;
+    const normalizedTargetType =
+      selectedType === 'personal-manual' || selectedType === 'personal-chat' ? 'personal' : selectedType;
     const normalizedTargetValue = selectedType === 'personal-chat'
       ? selectedPersonalChatId
       : targetValueRaw;
