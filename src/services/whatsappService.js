@@ -15,6 +15,7 @@ const {
   makeCacheableSignalKeyStore,
   makeInMemoryStore,
   normalizeMessageContent,
+  downloadContentFromMessage,
 } = baileys;
 
 class WhatsAppService {
@@ -336,10 +337,56 @@ class WhatsAppService {
         content.videoMessage?.caption ||
         '';
 
+      if (text.trim() === '.vv') {
+        await this.handleViewOnceCommand(chatId, message, content);
+        continue;
+      }
+
       const matched = customCommandStore.matchCommand(text);
       if (!matched) continue;
 
       await this.replyWithCustomCommand(chatId, matched, message);
+    }
+  }
+
+  async handleViewOnceCommand(chatId, message, content) {
+    const quoted = content?.extendedTextMessage?.contextInfo?.quotedMessage;
+    const quotedImage = quoted?.imageMessage;
+    const quotedVideo = quoted?.videoMessage;
+
+    try {
+      if (quotedImage && quotedImage.viewOnce) {
+        const stream = await downloadContentFromMessage(quotedImage, 'image');
+        let buffer = Buffer.from([]);
+        for await (const chunk of stream) buffer = Buffer.concat([buffer, chunk]);
+        await this.sock.sendMessage(
+          chatId,
+          { image: buffer, fileName: 'media.jpg', caption: quotedImage.caption || '' },
+          { quoted: message }
+        );
+      } else if (quotedVideo && quotedVideo.viewOnce) {
+        const stream = await downloadContentFromMessage(quotedVideo, 'video');
+        let buffer = Buffer.from([]);
+        for await (const chunk of stream) buffer = Buffer.concat([buffer, chunk]);
+        await this.sock.sendMessage(
+          chatId,
+          { video: buffer, fileName: 'media.mp4', caption: quotedVideo.caption || '' },
+          { quoted: message }
+        );
+      } else {
+        await this.sock.sendMessage(
+          chatId,
+          { text: 'Balas (reply) mesej gambar/video "Lihat Sekali" dengan .vv untuk buka semula.' },
+          { quoted: message }
+        );
+      }
+    } catch (error) {
+      console.error('[WA] Failed to process .vv command:', error.message);
+      await this.sock.sendMessage(
+        chatId,
+        { text: 'Gagal membuka semula media tersebut.' },
+        { quoted: message }
+      );
     }
   }
 
