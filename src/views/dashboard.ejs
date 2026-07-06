@@ -59,6 +59,15 @@
               </svg>
               <span>Custom Command</span>
             </a>
+            <a class="nav-item" href="#deleted-messages">
+              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+                <path d="M10 11v6M14 11v6"></path>
+                <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
+              </svg>
+              <span>Deleted Messages</span>
+            </a>
           </nav>
         </div>
 
@@ -462,6 +471,68 @@
                 </div>
               </article>
             </div>
+          </section>
+
+          <section class="page" data-page="deleted-messages" id="deleted-messages" hidden>
+            <article class="card table-card">
+              <div class="card-header section-head">
+                <div>
+                  <h2 class="card-title">Deleted Messages</h2>
+                  <p class="card-description">Log of messages that were deleted by senders, captured automatically</p>
+                </div>
+                <button type="button" class="btn btn-outline btn-sm" id="clearDeletedMessagesBtn" <%= !deletedMessages.length ? 'disabled' : '' %>>Clear All</button>
+              </div>
+              <div class="card-content no-pad">
+                <div class="table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Chat</th>
+                        <th>Sender</th>
+                        <th>Type</th>
+                        <th>Content</th>
+                        <th>Deleted At</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody id="deleted-messages-table-body">
+                      <% if (!deletedMessages.length) { %>
+                      <tr>
+                        <td colspan="6" class="muted">No deleted messages recorded yet</td>
+                      </tr>
+                      <% } %>
+
+                      <% deletedMessages.forEach((item) => { %>
+                      <tr data-id="<%= item.id %>">
+                        <td>
+                          <%= item.isGroup ? (item.chatName || item.chatId) : item.chatId %>
+                          <% if (item.isGroup) { %>
+                          <span class="badge badge-outline">group</span>
+                          <% } %>
+                        </td>
+                        <td><%= item.senderName || item.senderId || '-' %></td>
+                        <td><span class="badge badge-outline"><%= item.type %></span></td>
+                        <td class="cell-message">
+                          <% if (item.mediaUrl) { %>
+                          <a href="<%= item.mediaUrl %>" target="_blank" rel="noopener"><%= item.fileName || 'View media' %></a>
+                          <% if (item.text) { %><br /><span class="muted"><%= item.text %></span><% } %>
+                          <% } else { %>
+                          <%= item.text %>
+                          <% } %>
+                        </td>
+                        <td class="js-local-datetime" data-iso="<%= item.deletedAt %>">
+                          <%= dayjs(item.deletedAt).format('DD MMM YYYY HH:mm:ss') %>
+                        </td>
+                        <td class="cell-action">
+                          <button class="btn btn-ghost btn-sm btn-delete-deleted-message" data-id="<%= item.id %>">Remove</button>
+                        </td>
+                      </tr>
+                      <% }) %>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </article>
           </section>
         </div>
       </main>

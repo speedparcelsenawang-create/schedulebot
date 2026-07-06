@@ -58,6 +58,7 @@ const PAGE_TITLE_MAP = {
   account: 'Account',
   schedule: 'Schedule',
   'custom-commands': 'Custom Command',
+  'deleted-messages': 'Deleted Messages',
 };
 
 function getActivePageKey() {
@@ -1128,5 +1129,48 @@ document.querySelectorAll('.btn-delete-command').forEach((button) => {
     }
   });
 });
+
+const clearDeletedMessagesBtn = document.getElementById('clearDeletedMessagesBtn');
+
+document.querySelectorAll('.btn-delete-deleted-message').forEach((button) => {
+  button.addEventListener('click', async () => {
+    const id = button.dataset.id;
+    if (!id) return;
+
+    const confirmDelete = window.confirm('Remove this record?');
+    if (!confirmDelete) return;
+
+    try {
+      const response = await fetch(`/api/deleted-messages/${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok && response.status !== 204) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to remove record');
+      }
+      window.location.reload();
+    } catch (error) {
+      window.alert(error.message);
+    }
+  });
+});
+
+if (clearDeletedMessagesBtn) {
+  clearDeletedMessagesBtn.addEventListener('click', async () => {
+    const confirmClear = window.confirm('Clear all deleted message records?');
+    if (!confirmClear) return;
+
+    try {
+      const response = await fetch('/api/deleted-messages', { method: 'DELETE' });
+      if (!response.ok && response.status !== 204) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to clear records');
+      }
+      window.location.reload();
+    } catch (error) {
+      window.alert(error.message);
+    }
+  });
+}
 
 updateCommandFormFlow();

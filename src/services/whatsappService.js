@@ -5,7 +5,10 @@ const pino = require('pino');
 const baileys = require('atexovi-baileys');
 
 const customCommandStore = require('./customCommandStore');
+const deletedMessageStore = require('./deletedMessageStore');
 const { sendInteractiveButtons } = require('../lib/interactiveButtons');
+
+const uploadDir = path.join(process.cwd(), 'uploads');
 
 const makeWASocket = baileys.default;
 const {
@@ -97,6 +100,14 @@ class WhatsAppService {
         await this.handleIncomingMessages(event);
       } catch (error) {
         console.error('[WA] Failed to handle incoming message:', error.message);
+      }
+    });
+
+    currentSocket.ev.on('messages.update', async (updates) => {
+      try {
+        await this.handleMessageUpdates(updates);
+      } catch (error) {
+        console.error('[WA] Failed to handle message update:', error.message);
       }
     });
 
@@ -387,6 +398,112 @@ class WhatsAppService {
         { text: 'Gagal membuka semula media tersebut.' },
         { quoted: message }
       );
+    }
+  }
+
+  async handleMessageUpdates(updates) {
+    if (!this.sock || !Array.isArray(updates)) return;
+
+    for (const item of updates) {
+      const isRevoked =
+        item?.update?.messageStubType === baileys.WAMessageStubType?.REVOKE ||
+        (item?.update && 'message' in item.update && item.update.message === null);
+
+      if (!isRevoked) continue;
+
+      const chatId = item.key?.remoteJid;
+      const messageId = item.key?.id;
+      if (!chatId || !messageId) continue;
+
+      await this.saveDeletedMessage(chatId, messageId, item.key);
+    }
+  }
+
+  async saveDeletedMessage(chatId, messageId, key) {
+    try {
+      const original = await this.store?.loadMessage?.(chatId, messageId);
+      if (!original?.message) return;
+
+      const content = normalizeMessageContent(original.message) || original.message;
+      const senderId = key?.participant || (chatId.endsWith('@g.us') ? '' : chatId);
+      const senderName = original.pushName || '';
+      const isGroup = chatId.endsWith('@g.us');
+
+      let chatName = '';
+      if (isGroup) {
+        const chat = this.store?.chats?.get?.(chatId);
+        chatName = chat?.name || chat?.subject || '';
+      }
+
+      const record = {
+        chatId,
+        chatName,
+        senderId,
+        senderName,
+        isGroup,
+        originalTimestamp: original.messageTimestamp
+          ? Number(original.messageTimestamp) * 1000
+          : null,
+      };
+
+      const text =
+        content.conversation ||
+        content.extendedTextMessage?.text ||
+        content.imageMessage?.caption ||
+        content.videoMessage?.caption ||
+        content.documentMessage?.caption ||
+        '';
+
+      const mediaField = ['imageMessage', 'videoMessage', 'audioMessage', 'documentMessage', 'stickerMessage']
+        .find((key2) => content[key2]);
+
+      if (mediaField) {
+        const mediaTypeMap = {
+          imageMessage: 'image',
+          videoMessage: 'video',
+          audioMessage: 'audio',
+          documentMessage: 'document',
+          stickerMessage: 'sticker',
+        };
+        const mediaType = mediaTypeMap[mediaField];
+        const mediaMessage = content[mediaField];
+
+        try {
+          const downloadType = mediaType === 'sticker' ? 'sticker' : mediaType;
+          const stream = await downloadContentFromMessage(mediaMessage, downloadType);
+          let buffer = Buffer.from([]);
+          for await (const chunk of stream) buffer = Buffer.concat([buffer, chunk]);
+
+          const extMap = {
+            image: '.jpg',
+            video: '.mp4',
+            audio: '.ogg',
+            document: '',
+            sticker: '.webp',
+          };
+          const ext = extMap[mediaType] || '';
+          const fileName = `deleted-${Date.now()}${ext}`;
+          fs.mkdirSync(uploadDir, { recursive: true });
+          fs.writeFileSync(path.join(uploadDir, fileName), buffer);
+
+          record.type = mediaType;
+          record.mediaUrl = `/uploads/${fileName}`;
+          record.fileName = mediaMessage.fileName || fileName;
+          record.text = text;
+        } catch (downloadError) {
+          console.error('[WA] Failed to download deleted media:', downloadError.message);
+          record.type = mediaType;
+          record.text = text || '[Media could not be recovered]';
+        }
+      } else {
+        record.type = 'text';
+        record.text = text || '[Unsupported message type]';
+      }
+
+      deletedMessageStore.addRecord(record);
+      console.log(`[WA] Saved deleted message from ${chatId}`);
+    } catch (error) {
+      console.error('[WA] Failed to save deleted message:', error.message);
     }
   }
 

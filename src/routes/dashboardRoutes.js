@@ -5,6 +5,7 @@ const dayjs = require('dayjs');
 const multer = require('multer');
 const scheduleStore = require('../services/scheduleStore');
 const customCommandStore = require('../services/customCommandStore');
+const deletedMessageStore = require('../services/deletedMessageStore');
 
 const uploadDir = path.join(process.cwd(), 'uploads');
 const uploadStorage = multer.diskStorage({
@@ -66,6 +67,7 @@ function createDashboardRouter(whatsappService) {
     );
 
     const customCommands = customCommandStore.listCommands();
+    const deletedMessages = deletedMessageStore.listRecords();
 
     return {
       schedules,
@@ -75,6 +77,7 @@ function createDashboardRouter(whatsappService) {
       customCommands,
       commandCategories: customCommandStore.ALLOWED_CATEGORIES,
       mediaTypes: customCommandStore.ALLOWED_MEDIA_TYPES,
+      deletedMessages,
     };
   }
 
@@ -180,6 +183,23 @@ function createDashboardRouter(whatsappService) {
       return res.status(404).json({ error: 'Schedule not found' });
     }
 
+    return res.status(204).send();
+  });
+
+  router.get('/api/deleted-messages', (req, res) => {
+    return res.json({ messages: deletedMessageStore.listRecords() });
+  });
+
+  router.delete('/api/deleted-messages/:id', (req, res) => {
+    const removed = deletedMessageStore.removeRecord(req.params.id);
+    if (!removed) {
+      return res.status(404).json({ error: 'Record not found' });
+    }
+    return res.status(204).send();
+  });
+
+  router.delete('/api/deleted-messages', (req, res) => {
+    deletedMessageStore.clearRecords();
     return res.status(204).send();
   });
 
