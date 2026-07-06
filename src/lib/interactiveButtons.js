@@ -79,22 +79,45 @@ function toLegacyButtons(nativeButtons) {
     .slice(0, 3);
 }
 
+function buildMediaField(media) {
+  if (!media || !media.type || !media.source) return null;
+
+  const field = { [media.type]: media.source };
+  if (media.type === 'document') {
+    field.fileName = media.fileName || 'file';
+    field.mimetype = media.mimetype || 'application/octet-stream';
+  } else if (media.type === 'audio') {
+    field.mimetype = media.mimetype || 'audio/mpeg';
+    field.ptt = false;
+  }
+
+  return field;
+}
+
 async function sendInteractiveButtons(sock, jid, payload, options = {}) {
   const bodyText = payload?.text || payload?.caption || '';
   const footerText = payload?.footer || '';
   const nativeButtons = toNativeFlowButtons(payload?.buttons);
   const shouldStripQuotedFallback = isPersonalJid(jid) && Boolean(options?.quoted);
+  const mediaField = buildMediaField(payload?.media);
 
   if (!nativeButtons.length) {
-    await sock.sendMessage(jid, { text: bodyText || ' ' }, options);
+    if (mediaField) {
+      await sock.sendMessage(jid, { ...mediaField, caption: bodyText || undefined }, options);
+    } else {
+      await sock.sendMessage(jid, { text: bodyText || ' ' }, options);
+    }
     return;
   }
+
+  const bodyKey = mediaField ? 'caption' : 'text';
 
   try {
     await sock.sendMessage(
       jid,
       {
-        text: bodyText || ' ',
+        ...mediaField,
+        [bodyKey]: bodyText || ' ',
         footer: footerText,
         interactiveButtons: nativeButtons,
         viewOnce: true,
@@ -109,7 +132,8 @@ async function sendInteractiveButtons(sock, jid, payload, options = {}) {
     if (shouldStripQuotedFallback) {
       try {
         await sock.sendMessage(jid, {
-          text: bodyText || ' ',
+          ...mediaField,
+          [bodyKey]: bodyText || ' ',
           footer: footerText,
           interactiveButtons: nativeButtons,
           viewOnce: true,
@@ -118,6 +142,29 @@ async function sendInteractiveButtons(sock, jid, payload, options = {}) {
       } catch (retryError) {
         console.warn('[WA] interactiveButtons retry without quoted failed:', retryError.message);
       }
+    }
+  }
+
+  const legacyButtons = toLegacyButtons(nativeButtons);
+
+  if (mediaField && legacyButtons.length) {
+    // Media + buttons fallback: combine into a single legacy buttons message.
+    try {
+      await sock.sendMessage(
+        jid,
+        {
+          ...mediaField,
+          caption: bodyText || ' ',
+          footer: footerText,
+          buttons: legacyButtons,
+          headerType: 1,
+          viewOnce: true,
+        },
+        options
+      );
+      return;
+    } catch (legacyMediaError) {
+      console.warn('[WA] legacy media+buttons failed, falling back to text-only buttons:', legacyMediaError.message);
     }
   }
 
@@ -151,7 +198,6 @@ async function sendInteractiveButtons(sock, jid, payload, options = {}) {
     await sock.relayMessage(jid, msg.message, { messageId: msg.key.id });
   } catch (error) {
     console.warn('[WA] nativeFlow relay failed, trying legacy buttons:', error.message);
-    const legacyButtons = toLegacyButtons(nativeButtons);
     if (!legacyButtons.length) throw error;
 
     try {

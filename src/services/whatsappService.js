@@ -510,44 +510,34 @@ class WhatsAppService {
   async replyWithCustomCommand(chatId, command, quotedMessage) {
     const caption = String(command.response || '').replace(/\\n/g, '\n');
     const options = { quoted: quotedMessage };
+    const hasButtons = Boolean(command.buttons && command.buttons.length);
 
     if (command.mediaUrl && command.mediaType) {
-      const mediaSource = { url: command.mediaUrl };
-      const fileName = command.fileName || 'file';
-      const hasButtons = Boolean(command.buttons && command.buttons.length);
+      const media = {
+        type: command.mediaType,
+        source: { url: command.mediaUrl },
+        fileName: command.fileName || 'file',
+      };
 
       if (hasButtons) {
-        await sendInteractiveButtons(
-          this.sock,
-          chatId,
-          { text: caption || 'Choose an option:', buttons: command.buttons },
-          options
-        );
+        await sendInteractiveButtons(this.sock, chatId, { caption, media, buttons: command.buttons }, options);
+        return;
       }
 
-      const payload = hasButtons ? {} : { caption };
-
-      if (command.mediaType === 'image') {
-        await this.sock.sendMessage(chatId, { image: mediaSource, ...payload }, hasButtons ? {} : options);
-      } else if (command.mediaType === 'video') {
-        await this.sock.sendMessage(chatId, { video: mediaSource, ...payload }, hasButtons ? {} : options);
-      } else if (command.mediaType === 'audio') {
-        await this.sock.sendMessage(
-          chatId,
-          { audio: mediaSource, mimetype: 'audio/mpeg', ptt: false, ...payload },
-          hasButtons ? {} : options
-        );
+      const payload = { [command.mediaType]: media.source, caption };
+      if (command.mediaType === 'audio') {
+        payload.mimetype = 'audio/mpeg';
+        payload.ptt = false;
       } else if (command.mediaType === 'document') {
-        await this.sock.sendMessage(
-          chatId,
-          { document: mediaSource, fileName, mimetype: 'application/octet-stream', ...payload },
-          hasButtons ? {} : options
-        );
+        payload.fileName = media.fileName;
+        payload.mimetype = 'application/octet-stream';
       }
+
+      await this.sock.sendMessage(chatId, payload, options);
       return;
     }
 
-    if (caption) {
+    if (caption || hasButtons) {
       await sendInteractiveButtons(this.sock, chatId, { text: caption, buttons: command.buttons }, options);
     }
   }
