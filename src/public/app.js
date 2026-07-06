@@ -47,12 +47,17 @@ const breadcrumbSectionSep = document.getElementById('breadcrumbSectionSep');
 const breadcrumbSection = document.getElementById('breadcrumbSection');
 const navItems = Array.from(document.querySelectorAll('.sidebar-nav .nav-item'));
 const pages = Array.from(document.querySelectorAll('.page[data-page]'));
+const globalLoadingBar = document.getElementById('globalLoadingBar');
 const DEFAULT_PAGE_HASH = '#account';
 const THEME_STORAGE_KEY = 'schedulebot-theme';
+const PANEL_TRANSITION_MS = 180;
+const LOADING_BAR_DELAY_MS = 90;
 
 let hasLoadedGroups = false;
 let hasLoadedPersonalChats = false;
 let isWhatsAppReady = false;
+let networkRequestsInFlight = 0;
+let loadingBarDelayTimer = null;
 
 const PAGE_TITLE_MAP = {
   account: 'Account',
@@ -64,6 +69,102 @@ const PAGE_TITLE_MAP = {
 function getActivePageKey() {
   const activePage = pages.find((page) => !page.hidden);
   return activePage ? String(activePage.getAttribute('data-page') || '') : '';
+}
+
+function animatePanelEntry(panel) {
+  if (!panel || panel.hidden) return;
+
+  panel.classList.remove('is-entering');
+  window.requestAnimationFrame(() => {
+    panel.classList.add('is-entering');
+    window.setTimeout(() => {
+      panel.classList.remove('is-entering');
+    }, PANEL_TRANSITION_MS);
+  });
+}
+
+function setButtonBusy(button, isBusy, busyText) {
+  if (!button) return;
+
+  if (isBusy) {
+    if (!button.dataset.originalText) {
+      button.dataset.originalText = button.textContent || '';
+    }
+    if (busyText) {
+      button.textContent = busyText;
+    }
+    button.disabled = true;
+    button.classList.add('is-loading');
+    button.setAttribute('aria-busy', 'true');
+    return;
+  }
+
+  if (button.dataset.originalText) {
+    button.textContent = button.dataset.originalText;
+    delete button.dataset.originalText;
+  }
+  button.classList.remove('is-loading');
+  button.removeAttribute('aria-busy');
+}
+
+function showGlobalLoadingBar() {
+  if (!globalLoadingBar) return;
+  globalLoadingBar.hidden = false;
+  globalLoadingBar.classList.add('active');
+}
+
+function hideGlobalLoadingBar() {
+  if (!globalLoadingBar) return;
+  globalLoadingBar.classList.remove('active');
+  window.setTimeout(() => {
+    if (!globalLoadingBar.classList.contains('active')) {
+      globalLoadingBar.hidden = true;
+    }
+  }, 120);
+}
+
+function trackNetworkStart() {
+  networkRequestsInFlight += 1;
+  if (networkRequestsInFlight !== 1) return;
+
+  loadingBarDelayTimer = window.setTimeout(() => {
+    showGlobalLoadingBar();
+  }, LOADING_BAR_DELAY_MS);
+}
+
+function trackNetworkEnd() {
+  networkRequestsInFlight = Math.max(0, networkRequestsInFlight - 1);
+  if (networkRequestsInFlight > 0) return;
+
+  if (loadingBarDelayTimer) {
+    window.clearTimeout(loadingBarDelayTimer);
+    loadingBarDelayTimer = null;
+  }
+  hideGlobalLoadingBar();
+}
+
+function initGlobalFetchLoadingIndicator() {
+  if (typeof window.fetch !== 'function' || window.fetch.__schedulebotTracked) return;
+
+  const nativeFetch = window.fetch.bind(window);
+  const trackedFetch = async (...args) => {
+    trackNetworkStart();
+    try {
+      return await nativeFetch(...args);
+    } finally {
+      trackNetworkEnd();
+    }
+  };
+
+  trackedFetch.__schedulebotTracked = true;
+  trackedFetch.__nativeFetch = nativeFetch;
+  window.fetch = trackedFetch;
+}
+
+function finishInitialBoot() {
+  window.requestAnimationFrame(() => {
+    document.body.classList.remove('app-booting');
+  });
 }
 
 function getActiveAccountSectionLabel() {
@@ -123,6 +224,7 @@ function initTheme() {
 }
 
 initTheme();
+initGlobalFetchLoadingIndicator();
 
 if (themeToggleBtn) {
   themeToggleBtn.addEventListener('click', () => {
@@ -162,6 +264,8 @@ function showPageByHash(hash) {
   pages.forEach((page) => {
     page.hidden = page !== pageToShow;
   });
+
+  animatePanelEntry(pageToShow);
 
   setActiveNavItemByHash(`#${pageToShow.getAttribute('data-page')}`);
   updateTopBreadcrumb();
@@ -280,6 +384,7 @@ function setActiveConnectionMethod(method) {
   methodTabPhone.classList.toggle('active', isPhone);
   qrMethodPanel.hidden = isPhone;
   phoneMethodPanel.hidden = !isPhone;
+  animatePanelEntry(isPhone ? phoneMethodPanel : qrMethodPanel);
   updateTopBreadcrumb();
 }
 
@@ -299,6 +404,7 @@ function setTabbedPanel(activeTabKey, tabs, panels) {
 
   panels.create.hidden = isList;
   panels.list.hidden = !isList;
+  animatePanelEntry(isList ? panels.list : panels.create);
   updateTopBreadcrumb();
 }
 
@@ -383,7 +489,7 @@ if (requestPairingBtn) {
       return;
     }
 
-    requestPairingBtn.disabled = true;
+    setButtonBusy(requestPairingBtn, true, 'Requesting...');
     if (pairingFeedback) {
       pairingFeedback.textContent = 'Requesting pairing code...';
       pairingFeedback.style.color = '#5d645d';
@@ -416,6 +522,7 @@ if (requestPairingBtn) {
         pairingFeedback.style.color = '#b42318';
       }
     } finally {
+      setButtonBusy(requestPairingBtn, false);
       requestPairingBtn.disabled = isWhatsAppReady;
     }
   });
@@ -488,7 +595,7 @@ async function loadPersonalChats(force = false) {
   if (hasLoadedPersonalChats && !force) return;
 
   personalChatPicker.disabled = true;
-  if (refreshPersonalChatsBtn) refreshPersonalChatsBtn.disabled = true;
+  setButtonBusy(refreshPersonalChatsBtn, true, 'Refreshing...');
   setPersonalChatHint('Fetching personal chat list...', '#5d645d');
 
   try {
@@ -513,6 +620,7 @@ async function loadPersonalChats(force = false) {
     setPersonalChatHint(error.message, '#b42318');
   } finally {
     personalChatPicker.disabled = false;
+    setButtonBusy(refreshPersonalChatsBtn, false);
     if (refreshPersonalChatsBtn) refreshPersonalChatsBtn.disabled = false;
   }
 }
@@ -522,7 +630,7 @@ async function loadGroups(force = false) {
   if (hasLoadedGroups && !force) return;
 
   groupPicker.disabled = true;
-  if (refreshGroupsBtn) refreshGroupsBtn.disabled = true;
+  setButtonBusy(refreshGroupsBtn, true, 'Refreshing...');
   setGroupHint('Fetching group list...', '#5d645d');
 
   try {
@@ -547,6 +655,7 @@ async function loadGroups(force = false) {
     setGroupHint(error.message, '#b42318');
   } finally {
     groupPicker.disabled = false;
+    setButtonBusy(refreshGroupsBtn, false);
     if (refreshGroupsBtn) refreshGroupsBtn.disabled = false;
   }
 }
@@ -680,8 +789,11 @@ if (form) {
       return;
     }
 
+    const scheduleSubmitBtn = form.querySelector('button[type="submit"]');
+
     feedback.textContent = 'Saving schedule...';
     feedback.style.color = '#5d645d';
+    setButtonBusy(scheduleSubmitBtn, true, 'Saving...');
 
     try {
       const response = await fetch('/api/schedules', {
@@ -699,10 +811,12 @@ if (form) {
       feedback.style.color = '#136f63';
       form.reset();
       syncTargetInputContent();
-      setTimeout(() => window.location.reload(), 350);
+      setTimeout(() => window.location.reload(), 120);
     } catch (error) {
       feedback.textContent = error.message;
       feedback.style.color = '#b42318';
+    } finally {
+      setButtonBusy(scheduleSubmitBtn, false);
     }
   });
 }
@@ -1074,6 +1188,7 @@ if (commandForm) {
     };
 
     setCommandFeedback(isEditing ? 'Updating command...' : 'Saving command...', '#5d645d');
+    setButtonBusy(commandSubmitBtn, true, isEditing ? 'Updating...' : 'Saving...');
 
     try {
       const url = isEditing
@@ -1093,9 +1208,12 @@ if (commandForm) {
       }
 
       setCommandFeedback(isEditing ? 'Command updated' : 'Command saved', '#136f63');
-      setTimeout(() => window.location.reload(), 350);
+      setTimeout(() => window.location.reload(), 120);
     } catch (error) {
       setCommandFeedback(error.message, '#b42318');
+    } finally {
+      setButtonBusy(commandSubmitBtn, false);
+      updateCommandSubmitState();
     }
   });
 }
@@ -1106,6 +1224,221 @@ document.querySelectorAll('.btn-edit-command').forEach((button) => {
     const command = commandsByTrigger.get(trigger);
     if (command) fillCommandForm(command);
   });
+});
+
+const commandPreviewModal = document.getElementById('commandPreviewModal');
+const closeCommandPreviewModalBtn = document.getElementById('closeCommandPreviewModal');
+const commandPreviewImage = document.getElementById('commandPreviewImage');
+const commandPreviewVideo = document.getElementById('commandPreviewVideo');
+const commandPreviewAudio = document.getElementById('commandPreviewAudio');
+const commandPreviewDocument = document.getElementById('commandPreviewDocument');
+const commandPreviewDocumentLink = document.getElementById('commandPreviewDocumentLink');
+const commandPreviewBadge = document.getElementById('commandPreviewBadge');
+const commandPreviewTitle = document.getElementById('commandPreviewTitle');
+const commandPreviewDescription = document.getElementById('commandPreviewDescription');
+const commandPreviewContent = document.getElementById('commandPreviewContent');
+const commandPreviewButtons = document.getElementById('commandPreviewButtons');
+const commandPreviewActionBtn = document.getElementById('commandPreviewActionBtn');
+
+function closeCommandPreviewModal() {
+  if (!commandPreviewModal) return;
+
+  if (commandPreviewVideo) {
+    commandPreviewVideo.pause();
+    commandPreviewVideo.removeAttribute('src');
+    commandPreviewVideo.load();
+  }
+
+  if (commandPreviewAudio) {
+    commandPreviewAudio.pause();
+    commandPreviewAudio.removeAttribute('src');
+    commandPreviewAudio.load();
+  }
+
+  commandPreviewModal.hidden = true;
+  document.body.style.overflow = '';
+}
+
+function parseButtonParams(button) {
+  if (!button || typeof button !== 'object') return {};
+  if (typeof button.buttonParamsJson !== 'string') return {};
+
+  try {
+    const parsed = JSON.parse(button.buttonParamsJson);
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch (error) {
+    return {};
+  }
+}
+
+function resetCommandPreviewMedia() {
+  if (commandPreviewImage) {
+    commandPreviewImage.hidden = false;
+  }
+
+  if (commandPreviewVideo) {
+    commandPreviewVideo.hidden = true;
+  }
+
+  if (commandPreviewAudio) {
+    commandPreviewAudio.hidden = true;
+  }
+
+  if (commandPreviewDocument) {
+    commandPreviewDocument.hidden = true;
+  }
+}
+
+function renderCommandPreviewButtons(command) {
+  if (!commandPreviewButtons) return;
+
+  commandPreviewButtons.innerHTML = '';
+  const list = Array.isArray(command.buttons) ? command.buttons : [];
+  if (!list.length) {
+    commandPreviewButtons.hidden = true;
+    return;
+  }
+
+  list.forEach((buttonItem) => {
+    const params = parseButtonParams(buttonItem);
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'btn wa-preview-chip';
+    button.textContent = params.display_text || 'Button';
+
+    const kind = String(buttonItem.name || '').trim();
+    if (kind === 'cta_url' && params.url) {
+      button.addEventListener('click', () => window.open(params.url, '_blank', 'noopener'));
+    } else if (kind === 'cta_call' && params.phone_number) {
+      button.addEventListener('click', () => window.open(`tel:${params.phone_number}`, '_self'));
+    } else if (kind === 'cta_copy' && params.copy_code) {
+      button.addEventListener('click', async () => {
+        try {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(params.copy_code);
+            button.textContent = 'Copied';
+            setTimeout(() => {
+              button.textContent = params.display_text || 'Button';
+            }, 1200);
+          }
+        } catch (error) {
+          // Ignore clipboard errors and keep button usable.
+        }
+      });
+    }
+
+    commandPreviewButtons.appendChild(button);
+  });
+
+  commandPreviewButtons.hidden = false;
+}
+
+function openCommandPreviewModal(command) {
+  if (!commandPreviewModal || !command) return;
+
+  const fallbackCover = 'https://avatar.vercel.sh/shadcn1';
+  const mediaType = String(command.mediaType || '').trim();
+  const mediaUrl = String(command.mediaUrl || '').trim();
+  const mediaTypeLabel = mediaType ? mediaType.toUpperCase() : 'TEXT';
+  const description = command.description
+    ? String(command.description)
+    : 'online';
+  const textContent = String(command.response || '').trim();
+
+  resetCommandPreviewMedia();
+
+  if (commandPreviewImage) {
+    commandPreviewImage.src = fallbackCover;
+    commandPreviewImage.alt = mediaUrl
+      ? `Media preview ${command.trigger || ''}`
+      : 'Command cover';
+  }
+
+  if (mediaUrl && mediaType === 'image' && commandPreviewImage) {
+    commandPreviewImage.src = mediaUrl;
+    commandPreviewImage.hidden = false;
+  }
+
+  if (mediaUrl && mediaType === 'video' && commandPreviewVideo) {
+    commandPreviewImage.hidden = true;
+    commandPreviewVideo.src = mediaUrl;
+    commandPreviewVideo.hidden = false;
+  }
+
+  if (mediaUrl && mediaType === 'audio' && commandPreviewAudio) {
+    commandPreviewAudio.src = mediaUrl;
+    commandPreviewAudio.hidden = false;
+  }
+
+  if (mediaUrl && mediaType === 'document' && commandPreviewDocument && commandPreviewDocumentLink) {
+    commandPreviewDocument.hidden = false;
+    commandPreviewDocumentLink.href = mediaUrl;
+    commandPreviewDocumentLink.textContent = command.fileName || 'Open document';
+  }
+
+  if (commandPreviewBadge) {
+    commandPreviewBadge.textContent = mediaTypeLabel;
+  }
+
+  if (commandPreviewTitle) {
+    commandPreviewTitle.textContent = command.trigger || 'Command Preview';
+  }
+
+  if (commandPreviewDescription) {
+    commandPreviewDescription.textContent = description;
+  }
+
+  if (commandPreviewContent) {
+    if (textContent) {
+      commandPreviewContent.textContent = textContent;
+      commandPreviewContent.hidden = false;
+    } else {
+      commandPreviewContent.textContent = '';
+      commandPreviewContent.hidden = true;
+    }
+  }
+
+  renderCommandPreviewButtons(command);
+
+  if (commandPreviewActionBtn) {
+    commandPreviewActionBtn.onclick = () => {
+      closeCommandPreviewModal();
+      fillCommandForm(command);
+    };
+  }
+
+  commandPreviewModal.hidden = false;
+  document.body.style.overflow = 'hidden';
+}
+
+document.querySelectorAll('.btn-preview-command').forEach((button) => {
+  button.addEventListener('click', () => {
+    const trigger = button.dataset.trigger;
+    if (!trigger) return;
+
+    const command = commandsByTrigger.get(trigger);
+    if (!command) return;
+
+    openCommandPreviewModal(command);
+  });
+});
+
+if (commandPreviewModal) {
+  commandPreviewModal.addEventListener('click', (event) => {
+    if (event.target instanceof HTMLElement && event.target.dataset.closeModal === 'command-preview') {
+      closeCommandPreviewModal();
+    }
+  });
+}
+
+if (closeCommandPreviewModalBtn) {
+  closeCommandPreviewModalBtn.addEventListener('click', closeCommandPreviewModal);
+}
+
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && commandPreviewModal && !commandPreviewModal.hidden) {
+    closeCommandPreviewModal();
+  }
 });
 
 document.querySelectorAll('.btn-delete-command').forEach((button) => {
@@ -1175,3 +1508,4 @@ if (clearDeletedMessagesBtn) {
 }
 
 updateCommandFormFlow();
+finishInitialBoot();

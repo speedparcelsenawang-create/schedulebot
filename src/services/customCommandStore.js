@@ -14,6 +14,13 @@ const DEFAULT_COMMANDS = [
     category: 'Utility',
     createdAt: new Date().toISOString(),
   },
+  {
+    trigger: '!vv',
+    response: 'Reply mesej gambar/video view-once dengan !vv untuk buka semula media.',
+    description: 'Open quoted view-once media',
+    category: 'Utility',
+    createdAt: new Date().toISOString(),
+  },
 ];
 
 function loadCommands() {

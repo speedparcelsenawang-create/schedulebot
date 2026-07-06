@@ -435,15 +435,14 @@
                         <tr>
                           <th>Trigger</th>
                           <th>Category</th>
-                          <th>Response</th>
-                          <th>Media</th>
+                          <th>Content</th>
                           <th></th>
                         </tr>
                       </thead>
                       <tbody id="command-table-body">
                         <% if (!customCommands.length) { %>
                         <tr>
-                          <td colspan="5" class="muted">No custom commands yet</td>
+                          <td colspan="4" class="muted">No custom commands yet</td>
                         </tr>
                         <% } %>
 
@@ -451,13 +450,8 @@
                         <tr data-trigger="<%= item.trigger %>">
                           <td><code><%= item.trigger %></code></td>
                           <td><span class="badge badge-outline"><%= item.category %></span></td>
-                          <td class="cell-message"><%= item.response %></td>
-                          <td>
-                            <% if (item.mediaType) { %>
-                            <span class="badge badge-outline"><%= item.mediaType %></span>
-                            <% } else { %>
-                            <span class="muted">-</span>
-                            <% } %>
+                          <td class="command-content-cell">
+                            <button class="btn btn-outline btn-sm btn-preview-command" data-trigger="<%= item.trigger %>">Preview Content</button>
                           </td>
                           <td class="cell-action">
                             <button class="btn btn-ghost btn-sm btn-edit-command" data-trigger="<%= item.trigger %>">Edit</button>
@@ -536,6 +530,47 @@
           </section>
         </div>
       </main>
+    </div>
+
+    <div class="modal" id="commandPreviewModal" hidden>
+      <div class="modal-backdrop" data-close-modal="command-preview"></div>
+      <div class="modal-panel command-preview-panel" role="dialog" aria-modal="true" aria-labelledby="commandPreviewTitle">
+        <button type="button" class="modal-close" id="closeCommandPreviewModal" aria-label="Close preview">&times;</button>
+
+        <article class="wa-preview-card">
+          <header class="wa-preview-topbar">
+            <div class="wa-preview-avatar">S</div>
+            <div class="wa-preview-meta">
+              <p class="wa-preview-name" id="commandPreviewTitle">Command Preview</p>
+              <p class="wa-preview-status" id="commandPreviewDescription">Last seen today at 12:00</p>
+            </div>
+            <span class="badge badge-outline wa-preview-badge" id="commandPreviewBadge">TEXT</span>
+          </header>
+
+          <div class="wa-preview-chat-bg">
+            <div class="wa-preview-bubble">
+              <div class="command-preview-cover-wrap">
+                <img src="https://avatar.vercel.sh/shadcn1" alt="Command cover" class="command-preview-cover" id="commandPreviewImage" />
+                <video id="commandPreviewVideo" class="command-preview-media" controls hidden></video>
+                <audio id="commandPreviewAudio" class="command-preview-audio" controls hidden></audio>
+                <div id="commandPreviewDocument" class="command-preview-document" hidden>
+                  <span class="badge badge-outline">Document</span>
+                  <a id="commandPreviewDocumentLink" href="#" target="_blank" rel="noopener">Open document</a>
+                </div>
+              </div>
+
+              <p id="commandPreviewContent" class="command-preview-content" hidden>No content</p>
+
+              <div id="commandPreviewButtons" class="command-preview-buttons" hidden></div>
+              <span class="wa-preview-time">12:00</span>
+            </div>
+          </div>
+
+          <div class="wa-preview-footer">
+            <button type="button" class="btn btn-primary btn-block" id="commandPreviewActionBtn">Gunakan Command Ini</button>
+          </div>
+        </article>
+      </div>
     </div>
 
     <script>

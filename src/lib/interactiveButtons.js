@@ -224,6 +224,14 @@ async function sendInteractiveButtons(sock, jid, payload, options = {}) {
       });
     }
   }
+
+  // Final fail-safe: still deliver the content even if all button formats fail.
+  if (mediaField) {
+    await sock.sendMessage(jid, { ...mediaField, caption: bodyText || undefined }, options);
+    return;
+  }
+
+  await sock.sendMessage(jid, { text: bodyText || ' ' }, options);
 }
 
 module.exports = {

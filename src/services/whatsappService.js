@@ -341,14 +341,9 @@ class WhatsAppService {
 
       const content = normalizeMessageContent(message.message) || message.message;
 
-      const text =
-        content.conversation ||
-        content.extendedTextMessage?.text ||
-        content.imageMessage?.caption ||
-        content.videoMessage?.caption ||
-        '';
+      const text = this.extractMessageText(content);
 
-      if (text.trim() === '.vv') {
+      if (text.trim() === '!vv') {
         await this.handleViewOnceCommand(chatId, message, content);
         continue;
       }
@@ -358,6 +353,42 @@ class WhatsAppService {
 
       await this.replyWithCustomCommand(chatId, matched, message);
     }
+  }
+
+  extractMessageText(content) {
+    if (!content || typeof content !== 'object') return '';
+
+    const interactiveParamsJson = content.interactiveResponseMessage?.nativeFlowResponseMessage?.paramsJson;
+    let interactiveSelectedId = '';
+    if (typeof interactiveParamsJson === 'string' && interactiveParamsJson.trim()) {
+      try {
+        const parsed = JSON.parse(interactiveParamsJson);
+        if (parsed && typeof parsed === 'object') {
+          interactiveSelectedId = String(parsed.id || parsed.selected_id || '').trim();
+        }
+      } catch (error) {
+        interactiveSelectedId = '';
+      }
+    }
+
+    const candidates = [
+      content.conversation,
+      content.extendedTextMessage?.text,
+      content.imageMessage?.caption,
+      content.videoMessage?.caption,
+      content.documentMessage?.caption,
+      content.buttonsResponseMessage?.selectedButtonId,
+      content.templateButtonReplyMessage?.selectedId,
+      content.listResponseMessage?.singleSelectReply?.selectedRowId,
+      interactiveSelectedId,
+    ];
+
+    for (const candidate of candidates) {
+      const value = String(candidate || '').trim();
+      if (value) return value;
+    }
+
+    return '';
   }
 
   async handleViewOnceCommand(chatId, message, content) {
@@ -387,12 +418,12 @@ class WhatsAppService {
       } else {
         await this.sock.sendMessage(
           chatId,
-          { text: 'Balas (reply) mesej gambar/video "Lihat Sekali" dengan .vv untuk buka semula.' },
+          { text: 'Balas (reply) mesej gambar/video "Lihat Sekali" dengan !vv untuk buka semula.' },
           { quoted: message }
         );
       }
     } catch (error) {
-      console.error('[WA] Failed to process .vv command:', error.message);
+      console.error('[WA] Failed to process !vv command:', error.message);
       await this.sock.sendMessage(
         chatId,
         { text: 'Gagal membuka semula media tersebut.' },

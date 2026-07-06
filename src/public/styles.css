@@ -929,6 +929,241 @@ tbody tr:hover {
   text-align: right;
 }
 
+.command-content-cell {
+  min-width: 180px;
+}
+
+/* ---------- Modal ---------- */
+
+.modal[hidden] {
+  display: none;
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(2px);
+}
+
+.modal-panel {
+  position: relative;
+  width: min(100%, 440px);
+  z-index: 1;
+}
+
+.modal-close {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--foreground);
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  z-index: 2;
+}
+
+.modal-close:hover {
+  background: var(--surface-2);
+}
+
+.wa-preview-card {
+  border: 1px solid #1f2c34;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #0b141a;
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.4);
+}
+
+.wa-preview-topbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #202c33;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.wa-preview-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: #3b4a54;
+  color: #d9fdd3;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.wa-preview-meta {
+  min-width: 0;
+  flex: 1;
+}
+
+.wa-preview-name,
+.wa-preview-status {
+  margin: 0;
+}
+
+.wa-preview-name {
+  color: #e9edef;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.wa-preview-status {
+  color: #8696a0;
+  font-size: 11.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wa-preview-badge {
+  border-color: rgba(37, 211, 102, 0.45);
+  color: #25d366;
+  background: rgba(37, 211, 102, 0.08);
+}
+
+.wa-preview-chat-bg {
+  padding: 14px;
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.03), transparent 38%),
+    radial-gradient(circle at bottom right, rgba(37, 211, 102, 0.05), transparent 45%),
+    #0b141a;
+}
+
+.wa-preview-bubble {
+  margin-left: auto;
+  width: min(100%, 320px);
+  background: #005c4b;
+  border-radius: 8px;
+  border-top-right-radius: 0;
+  padding: 8px;
+  color: #e9edef;
+}
+
+.command-preview-cover-wrap {
+  position: relative;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #111b21;
+  aspect-ratio: 16 / 9;
+}
+
+.command-preview-cover {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.command-preview-media {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: #000;
+}
+
+.command-preview-audio {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  width: calc(100% - 16px);
+}
+
+.command-preview-document {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 8px;
+  padding: 9px;
+  background: rgba(17, 27, 33, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.command-preview-document a {
+  color: #d9fdd3;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  font-size: 12px;
+}
+
+.command-preview-content {
+  margin: 8px 4px 0;
+  color: #e9edef;
+  font-size: 13px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.wa-preview-time {
+  display: block;
+  margin-top: 6px;
+  text-align: right;
+  color: rgba(233, 237, 239, 0.72);
+  font-size: 10.5px;
+}
+
+.command-preview-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.command-preview-buttons .wa-preview-chip {
+  height: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 999px;
+  background: rgba(11, 20, 26, 0.35);
+  color: #d9fdd3;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.command-preview-buttons .wa-preview-chip:hover {
+  background: rgba(11, 20, 26, 0.55);
+}
+
+.wa-preview-footer {
+  padding: 0 14px 14px;
+  background: #0b141a;
+}
+
+.wa-preview-footer .btn-primary {
+  background: #25d366;
+  border-color: #25d366;
+  color: #062b12;
+}
+
 /* ---------- Sidebar overlay (mobile) ---------- */
 
 .sidebar-overlay {
@@ -1005,5 +1240,18 @@ tbody tr:hover {
 
   .grid.two-cols {
     gap: 16px;
+  }
+
+  .command-content-cell {
+    min-width: 220px;
+  }
+
+  .modal {
+    padding: 12px;
+  }
+
+  .modal-close {
+    top: 8px;
+    right: 8px;
   }
 }
