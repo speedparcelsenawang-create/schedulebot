@@ -132,6 +132,12 @@
                       <img src="" alt="QR WhatsApp" class="qr" />
                       <% } %>
                       <p id="wa-qr-caption" class="qr-caption">Scan this QR code from WhatsApp to connect the bot.</p>
+                      <ol class="qr-instructions">
+                        <li>Buka WhatsApp di telefon anda.</li>
+                        <li>Ketik <strong>Settings</strong> &gt; <strong>Linked Devices</strong> (Peranti Ditautkan).</li>
+                        <li>Ketik <strong>Link a Device</strong> (Tautkan Peranti).</li>
+                        <li>Imbas kod QR di atas dengan kamera telefon anda.</li>
+                      </ol>
                     </div>
                     <p id="wa-qr-empty" class="muted" <%= !waState.ready && !waState.qrCodeDataUrl ? '' : 'hidden' %>>
                       QR will appear automatically when re-login is needed.
